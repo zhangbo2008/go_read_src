@@ -1,15 +1,28 @@
 package main
 
-var c = make(chan int)
-var a string
+import "time"
+
+var a, b int
 
 func f() {
-	a = "hello, world"
-	<-c
+	a = 1
+	b = 2
+}
+
+func g() {
+	println(b)
+	time.Sleep(1 * time.Microsecond)
+	time.Sleep(1 * time.Microsecond)
+	time.Sleep(1 * time.Microsecond)
+	println(a)
 }
 
 func main() {
 	go f()
-	c <- 0
-	print(a)
+
+	var ffffffffffffffff = 1.234234e12
+	println(ffffffffffffffff)
+
+	g()
+	time.Sleep(1 * time.Microsecond)
 }

@@ -374,6 +374,222 @@ func main() {
 
 
 
+var limit = make(chan int, 3)
+
+func main() {
+	for _, w := range work {
+		go func(w func()) {
+			limit <- 1
+			w()
+			<-limit
+		}(w)
+	}
+	select{}
+}
+// work是一个任务组成的数组.
+//select语句会一直监听所有指定的通道，直到其中一个通道准备好就会执行相应的代码块。
+// 这里面一直是空, 所以整个程序阻塞.
+//会把work里面的程序都起来, 但是limit大小是3.有3个在运行的w任务时候就会阻塞.这跟信号量效果一样.
+
+锁:
+sync里面有 sync.Mutex and sync.RWMutex.
+
+
+
+var l sync.Mutex
+var a string
+
+func f() {
+	a = "hello, world"
+	l.Unlock()
+}
+
+func main() {
+	l.Lock()
+	go f()
+	l.Lock()
+	print(a)
+}
+
+
+
+
+
+
+
+Once:
+var a string
+var once sync.Once
+
+func setup() {
+	a = "hello, world"
+}
+
+func doprint() {
+	once.Do(setup)
+	print(a)
+}
+
+func twoprint() {
+	go doprint()
+	go doprint()
+}
+
+
+Atomic Values
+
+Finalizers
+
+Additional Mechanisms
+  condition variables, lock-free maps, allocation pools, and wait groups. 
+
+例子:
+var a, b int
+
+func f() {
+	a = 1
+	b = 2
+}
+
+func g() {
+	print(b)
+	print(a)
+}
+
+func main() {
+	go f()
+	g()
+}
+//it can happen that g prints 2 and then 0.
+//main里面print b和a  同时f里面  a=1, b=2 有可能2赋值上了,1还没赋值上.但是我自己测试没复现出来.
+
+
+
+
+
+var a string
+var done bool
+
+func setup() {
+	a = "hello, world"
+	done = true
+}
+
+func doprint() {
+	if !done {
+		once.Do(setup)
+	}
+	print(a)
+}
+
+func twoprint() {
+	go doprint()
+	go doprint()
+} //没法保证能打印一次.
+
+
+
+
+
+
+
+var a string
+var done bool
+
+func setup() {
+	a = "hello, world"
+	done = true
+}
+
+func main() {
+	go setup()
+	for !done {
+	}
+	print(a)
+}//忙等也没法保证
+
+
+type T struct {
+	msg string
+}
+
+var g *T
+
+func setup() {
+	t := new(T)
+	t.msg = "hello, world"
+	g = t
+}
+
+func main() {
+	go setup()
+	for g == nil {
+	}
+	print(g.msg)
+}// 也是错的
+
+
+
+
+
+Not introducing data races into race-free programs means not moving writes out of conditional statements in which they appear. For example, a compiler must not invert the conditional in this program:
+//程序1
+*p = 1
+if cond {
+	*p = 2
+}
+
+
+//程序2
+*p = 2
+if !cond {
+	*p = 1
+}
+
+If cond is false and another goroutine is reading *p, then in the original program, the other goroutine can only observe any prior value of *p and 1. In the rewritten program, the other goroutine can observe 2, which was previously impossible.
+
+上面这2个程序不是等效的.
+第一个程序我们*p=1, cond=false , 那么另外一个进程读了1
+第二个程序我们cond=false, 但是另外一个进程读的快,把之间的2读走了.
+所以这两个程序不等效.这就是并发的让问题变复杂了.原则就是不要在cond里面修改并发的变量.
+
+
+
+n := 0
+for e := list; e != nil; e = e.next {
+	n++
+}
+i := *p
+*q = 1
+//list死循环, 那么也会在两个进程读写时候发生下面代码i := *p的运行.
+
+
+
+*p = i + *p/2
+//也不对
+
+
+
+n := 0
+for i := 0; i < m; i++ {
+	n += *shared
+}
+into:
+n := 0
+local := *shared
+for i := 0; i < m; i++ {
+	n += local
+}
+
+这两种代码是等价的. 因为其他的读不影响其他的写和读.
+
+
+
+
+
+
+
+# 继续 lib\time文件夹
 
 
 
@@ -384,6 +600,11 @@ func main() {
 
 
 
-#   g o _ r e a d _ s r c  
- #   g o _ r e a d _ s r c  
- 
+
+
+
+
+
+
+
+
