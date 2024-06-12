@@ -334,7 +334,8 @@ func main() {
 	<-c
 	print(a)
 }
-```这个代码可以保证打印hello,world, 把10丢掉也是正确的.无论带不带上10: 我们main函数需要c往外吐一个数才能启动, 但是c里面是空,所以f里面c<-0之后,print才启动.
+```
+这个代码可以保证打印hello,world, 把10丢掉也是正确的.无论带不带上10: 我们main函数需要c往外吐一个数才能启动, 但是c里面是空,所以f里面c<-0之后,print才启动.
 
 
 ```
@@ -351,7 +352,8 @@ func main() {
 	c <- 0
 	print(a)
 }
-```可以正确打印.因为c不带缓存,上来就是阻塞的.只有f里面<-c了,main才跑print
+```
+可以正确打印.因为c不带缓存,上来就是阻塞的.只有f里面<-c了,main才跑print
 
 
 
@@ -369,7 +371,8 @@ func main() {
 	c <- 0
 	print(a)
 }
-```不会打印hello,world.因为我们考虑c带缓存, 那么他就是上来就是非阻塞的.我们main走c<-0时候,f运行不运行都无所谓.所以大概率代码直接打印空就结束了.
+```
+不会打印hello,world.因为我们考虑c带缓存, 那么他就是上来就是非阻塞的.我们main走c<-0时候,f运行不运行都无所谓.所以大概率代码直接打印空就结束了.
 
 
 
@@ -592,8 +595,91 @@ for i := 0; i < m; i++ {
 # 继续 lib\time文件夹
 
 
+  update.bash 更新zoneinfo.zip的数据.
+  mkzip.go是自己实现的压缩工具.
+
+  ```
+	var zb bytes.Buffer
+	zw := zip.NewWriter(&zb) //点开这个zip.NewWriter发现他的参数需要一个io.Writer,再点进去发现是一个接口,接口有一个方法Write(p []byte) (n int, err error), byte.Buffer就是一个实现了write方法的类.所以可以传入.//下面就是写入数据即可.
+  w, err := zw.CreateRaw(&zip.FileHeader{
+  Name:               name,
+  Method:             zip.Store,
+  CompressedSize64:   uint64(len(data)),
+  UncompressedSize64: uint64(len(data)),
+  CRC32:              crc32.ChecksumIEEE(data),
+})
+  if _, err := w.Write(data); err != nil {
+    log.Fatal(err)
+  }
+  ```
 
 
+
+
+
+
+# misc\cgo 这里面提供了很多demo代码
+
+
+fib.go贴到自己的main.go里面. 把big 里面库包改成"math/big"
+```go
+package main
+
+import (
+	"runtime"
+
+	big "math/big"
+)
+
+func fibber(c chan *big.Int, out chan string, n int64) {
+	// Keep the fibbers in dedicated operating system
+	// threads, so that this program tests coordination
+	// between pthreads and not just goroutines.
+	runtime.LockOSThread() //测试这个在各个os的pthread上的性能.
+
+	i := big.NewInt(n)
+	if n == 0 {
+		c <- i
+	}
+	for {
+		j := <-c
+		out <- j.String() //这里之所以使用string化.是因为big.int直接打印会打印一个对象的地址.不方便观看.转int存不下,只能string化打印是最好的方法.
+		i.Add(i, j)   // i=i+j
+		c <- i
+	}
+}
+
+func main() {
+	c := make(chan *big.Int)
+	out := make(chan string)
+	go fibber(c, out, 0) 
+	go fibber(c, out, 1)  // 最后参数0,1只是初始值, 线程起来之后, 两个进程就一直死循环了.一直是c里面塞进去一个数, 一个进程读走,之后加上后再塞入. 所以本质还是单进程. 两个进程通过c来同步.效率不会比单进程快.
+	for i := 0; i < 200; i++ {
+		println(<-out)
+	}
+}
+
+```
+
+
+gmp.go 是一个go中嵌入c函数的例子.不好编译,这里就跳过了.
+整体思路跟go的bigInt类似.
+
+
+misc\cgo\gmp\pi.go  使用gmp.go里面的大整数
+
+misc里面其他的都是一些其他平台的支持工具.
+
+
+
+src里面从依赖最少得开始看:
+	是unicode
+
+
+# src\unicode\utf8\utf8.go
+
+utf8是unicode一种. 用4个8位来表示. 我理解是我们经常用16进制表示.所以32位=4个16进制.
+对于这个源码我们直接看他提供的接口函数.
 
 
 

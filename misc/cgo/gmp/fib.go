@@ -12,8 +12,9 @@
 package main
 
 import (
-	big "."
 	"runtime"
+
+	big "math/big"
 )
 
 func fibber(c chan *big.Int, out chan string, n int64) {

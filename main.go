@@ -1,28 +1,7 @@
 package main
 
-import "time"
-
-var a, b int
-
-func f() {
-	a = 1
-	b = 2
-}
-
-func g() {
-	println(b)
-	time.Sleep(1 * time.Microsecond)
-	time.Sleep(1 * time.Microsecond)
-	time.Sleep(1 * time.Microsecond)
-	println(a)
-}
-
 func main() {
-	go f()
+	x := 0xf1                     //   0....011110001
+	println(int32(x) << 31 >> 31) // 11111111111 32个
 
-	var ffffffffffffffff = 1.234234e12
-	println(ffffffffffffffff)
-
-	g()
-	time.Sleep(1 * time.Microsecond)
 }

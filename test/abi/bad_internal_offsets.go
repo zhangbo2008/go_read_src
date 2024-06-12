@@ -1,12 +1,12 @@
-// compile
-
 //go:build !wasm
+
+package genChecker0
+
+// compile
 
 // Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-
-package genChecker0
 
 var FailCount int
 
@@ -37,6 +37,7 @@ type StructF0S1 struct {
 }
 
 // 0 returns 3 params
+//
 //go:registerparams
 //go:noinline
 func Test0(p0 uint32, p1 StructF0S0, p2 int32) {
