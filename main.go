@@ -1,7 +1,14 @@
 package main
 
-func main() {
-	x := 0xf1                     //   0....011110001
-	println(int32(x) << 31 >> 31) // 11111111111 32个
+import (
+	"math"
+)
 
+const zero = 121.11
+
+func main() {
+
+	x := -float64(zero)
+	b := math.Float64bits(x)
+	print(b)
 }

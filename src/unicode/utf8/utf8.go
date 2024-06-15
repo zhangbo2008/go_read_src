@@ -339,14 +339,14 @@ func RuneLen(r rune) int { //rune是一个unicode编码后的数字,我们返回
 // EncodeRune writes into p (which must be large enough) the UTF-8 encoding of the rune.
 // If the rune is out of range, it writes the encoding of [RuneError].
 // It returns the number of bytes written.
-func EncodeRune(p []byte, r rune) int {
+func EncodeRune(p []byte, r rune) int { // 把rune进行utf-8编码,rune本质是int32数字,编码之后是一个字符串. []byte类型.
 	// Negative values are erroneous. Making it unsigned addresses the problem.
-	switch i := uint32(r); {
+	switch i := uint32(r); { //因为utf8没有负数编码,所以我们强行转化uint32,负数直接变超大整数.用后续代码判断即可屏蔽掉负数.  addresses the problem 处理问题.
 	case i <= rune1Max:
 		p[0] = byte(r)
 		return 1
 	case i <= rune2Max:
-		_ = p[1] // eliminate bounds checks
+		_ = p[1] // eliminate bounds checks// 我们传入p是一个数组, 调用p[1]之前先进行边缘检测. 看看p[1]是否合法. go里面把他赋值给_ 即可检测他是否合法. 不合法go会自动panic. 省略了很多 index<len(str)的代码.
 		p[0] = t2 | byte(r>>6)
 		p[1] = tx | byte(r)&maskx
 		return 2
@@ -372,7 +372,7 @@ func EncodeRune(p []byte, r rune) int {
 // AppendRune appends the UTF-8 encoding of r to the end of p and
 // returns the extended buffer. If the rune is out of range,
 // it appends the encoding of [RuneError].
-func AppendRune(p []byte, r rune) []byte {
+func AppendRune(p []byte, r rune) []byte { //把r append到p后面
 	// This function is inlineable for fast handling of ASCII.
 	if uint32(r) <= rune1Max {
 		return append(p, byte(r))
@@ -397,14 +397,14 @@ func appendRuneNonASCII(p []byte, r rune) []byte {
 
 // RuneCount returns the number of runes in p. Erroneous and short
 // encodings are treated as single runes of width 1 byte.
-func RuneCount(p []byte) int {
+func RuneCount(p []byte) int { // rune本质就是一个32位整数, byte[]本质是8位整数数组. 他们都可以表示一个字符, byte[]表示一个字符或者一个字符串. 这个函数RunecCount就是给一个byte[]字符串.然后计算他能转为rune表示的多少个字符.  r 32位,表示一个 utf8
 	np := len(p)
 	var n int
 	for i := 0; i < np; {
 		n++
 		c := p[i]
 		if c < RuneSelf {
-			// ASCII fast path
+			// ASCII fast path  //如果是单个byte成为一个rune
 			i++
 			continue
 		}
@@ -415,10 +415,10 @@ func RuneCount(p []byte) int {
 		}
 		size := int(x & 7)
 		if i+size > np {
-			i++ // Short or invalid.
+			i++ // Short or invalid. //长度不够拼接一个的. 最后加上一个invalid.
 			continue
 		}
-		accept := acceptRanges[x>>4]
+		accept := acceptRanges[x>>4] //根据范围计算合法性.
 		if c := p[i+1]; c < accept.lo || accept.hi < c {
 			size = 1
 		} else if size == 2 {
@@ -427,14 +427,14 @@ func RuneCount(p []byte) int {
 		} else if size == 3 {
 		} else if c := p[i+3]; c < locb || hicb < c {
 			size = 1
-		}
+		} //计算size
 		i += size
 	}
 	return n
 }
 
 // RuneCountInString is like [RuneCount] but its input is a string.
-func RuneCountInString(s string) (n int) {
+func RuneCountInString(s string) (n int) { //跟上面代码一样.
 	ns := len(s)
 	for i := 0; i < ns; n++ {
 		c := s[i]
@@ -471,14 +471,21 @@ func RuneCountInString(s string) (n int) {
 // RuneStart reports whether the byte could be the first byte of an encoded,
 // possibly invalid rune. Second and subsequent bytes always have the top two
 // bits set to 10.
-func RuneStart(b byte) bool { return b&0xC0 != 0x80 }
+func RuneStart(b byte) bool { return b&0xC0 != 0x80 } //判断b是否为一个合法rune的第一个byte部分.
+
+// UTF-8编码规则如下：
+
+// 单字节字符（ASCII字符）：0xxxxxxx（最高位为0）
+// 双字节字符：110xxxxx 10xxxxxx
+// 三字节字符：1110xxxx 10xxxxxx 10xxxxxx
+// 四字节字符：11110xxx 10xxxxxx 10xxxxxx 10xxxxxx  所以我们知道一个byte是非ascii非后续字节才是我们要的前缀字节.  10xxxxxx:这种叫后缀字节.
 
 // Valid reports whether p consists entirely of valid UTF-8-encoded runes.
-func Valid(p []byte) bool {
+func Valid(p []byte) bool { //这个函数返回p是否是一个合法的utf8编码组成的byte数组.
 	// This optimization avoids the need to recompute the capacity
 	// when generating code for p[8:], bringing it to parity with
 	// ValidString, which was 20% faster on long ASCII strings.
-	p = p[:len(p):len(p)]
+	p = p[:len(p):len(p)] // 两个冒号切片: a[x:y:z] 切片内容是： [x:y] 切片长度，[x:z] 切片容量。长度计算：y-x，容量计算：z-x。
 
 	// Fast path. Check for and skip 8 bytes of ASCII characters per iteration.
 	for len(p) >= 8 {
@@ -488,14 +495,15 @@ func Valid(p []byte) bool {
 		// on many platforms. See test/codegen/memcombine.go.
 		first32 := uint32(p[0]) | uint32(p[1])<<8 | uint32(p[2])<<16 | uint32(p[3])<<24
 		second32 := uint32(p[4]) | uint32(p[5])<<8 | uint32(p[6])<<16 | uint32(p[7])<<24
+		//拼出来2个32位的整数
 		if (first32|second32)&0x80808080 != 0 {
-			// Found a non ASCII byte (>= RuneSelf).
+			// Found a non ASCII byte (>= RuneSelf). //一个ascii码是256长度,是8位. first32|second32 是4个ascii码, 每一个ascii码跟0x80做&运算. 大于0x80的跟0x80做&肯定非0,从而找到了非ascii吗,找到非ascii码我们就停下来. 我们通过这个循环过滤掉ascii码, 因为ascii码比较简单0-127都是合法的.直接跳过即可.
 			break
 		}
 		p = p[8:]
 	}
 	n := len(p)
-	for i := 0; i < n; {
+	for i := 0; i < n; { //这段跟之前代码很类似了.解析utf8编码,如果走到最后说明合法.返回true
 		pi := p[i]
 		if pi < RuneSelf {
 			i++
@@ -525,7 +533,7 @@ func Valid(p []byte) bool {
 }
 
 // ValidString reports whether s consists entirely of valid UTF-8-encoded runes.
-func ValidString(s string) bool {
+func ValidString(s string) bool { //同上, 跳过.
 	// Fast path. Check for and skip 8 bytes of ASCII characters per iteration.
 	for len(s) >= 8 {
 		// Combining two 32 bit loads allows the same code to be used
@@ -572,7 +580,7 @@ func ValidString(s string) bool {
 
 // ValidRune reports whether r can be legally encoded as UTF-8.
 // Code points that are out of range or a surrogate half are illegal.
-func ValidRune(r rune) bool {
+func ValidRune(r rune) bool { //r 是否是一个合法utf8编码,根据整数判断范围即可.
 	switch {
 	case 0 <= r && r < surrogateMin:
 		return true

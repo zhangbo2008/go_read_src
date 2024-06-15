@@ -114,4 +114,4 @@ func LastIndexRabinKarp[T string | []byte](s, sep T) int {
 // MakeNoZero makes a slice of length and capacity n without zeroing the bytes.
 // It is the caller's responsibility to ensure uninitialized bytes
 // do not leak to the end user.
-func MakeNoZero(n int) []byte
+func MakeNoZero(n int) []byte //这个函数输入一个n, 返回一个byte的长度为n的切片.不对他进行零化, 至于底层怎么实现的没写.就一个函数名. 可能在其他的汇编文件中.

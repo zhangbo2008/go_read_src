@@ -20,7 +20,7 @@ const (
 )
 
 // GraphicRanges defines the set of graphic characters according to Unicode.
-var GraphicRanges = []*RangeTable{
+var GraphicRanges = []*RangeTable{ //一些unicode组成的表.
 	L, M, N, P, S, Zs,
 }
 
@@ -36,7 +36,7 @@ var PrintRanges = []*RangeTable{
 func IsGraphic(r rune) bool {
 	// We convert to uint32 to avoid the extra test for negative,
 	// and in the index we convert to uint8 to avoid the range check.
-	if uint32(r) <= MaxLatin1 {
+	if uint32(r) <= MaxLatin1 { //MaxLatin1最大拉丁字母.
 		return properties[uint8(r)]&pg != 0
 	}
 	return In(r, GraphicRanges...)

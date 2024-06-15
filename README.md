@@ -673,24 +673,38 @@ misc里面其他的都是一些其他平台的支持工具.
 
 
 src里面从依赖最少得开始看:
-	是unicode
+	从unicode文件夹开始.文件大体分析会写这里,代码细节我会直接加到相关代码里面的注释.
 
 
 # src\unicode\utf8\utf8.go
 
-utf8是unicode一种. 用4个8位来表示. 我理解是我们经常用16进制表示.所以32位=4个16进制.
-对于这个源码我们直接看他提供的接口函数.
+	utf8是unicode一种. 用4个8位来表示. 我理解是我们经常用16进制表示.所以32位=4个16进制.
+	对于这个源码我们直接看他提供的接口函数.
+	utf8有2个表示一个是byte[] 一个是rune. 
+
+# src\unicode\utf16\utf16.go
+	很类似, 这次使用8个8位表示. 如果16进制数,就是4个16进制的数来表示一个unicode编码.
+
+
+# src\unicode\casetables.go
+	定义了一个大小写转化
+# src\unicode\graphic.go
+	图形的unicode字符串.
+
+# src\unicode\letter.go
+	一些字符串的转化函数. 大小写, 在不在一个范围,属性啥的工具函数.
+
+# src\unicode\tables.go
+	一些常量的表,作为数据用.不用分析里面的代码逻辑.
 
 
 
+# src\unsafe\unsafe.go
+	这个库包绕过了go的类型检查,所以不安全.可以直接访问变量的内存和指针.所以很方便.代码中只有函数名和大量的注释.所以这里把注释进行了一些翻译.估计这些函数实现的代码在其他部分.
 
 
-
-
-
-
-
-
-
-
-
+# strings
+	
+		可以看到每个文件都配有_test.go, 可以debug里面的测试代码加深理解.
+# src\strings\builder.go
+		builder是用来创建字符串的.

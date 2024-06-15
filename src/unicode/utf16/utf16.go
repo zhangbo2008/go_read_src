@@ -10,11 +10,11 @@ package utf16
 // Defining them locally avoids this package depending on package unicode.
 
 const (
-	replacementChar = '\uFFFD'     // Unicode replacement character
+	replacementChar = '\uFFFD'     // Unicode replacement character //作为不合法的表示.
 	maxRune         = '\U0010FFFF' // Maximum valid Unicode code point.
 )
 
-const (
+const ( //解码的边界值.
 	// 0xd800-0xdc00 encodes the high 10 bits of a pair.
 	// 0xdc00-0xe000 encodes the low 10 bits of a pair.
 	// the value is those 20 bits plus 0x10000.
@@ -34,9 +34,9 @@ func IsSurrogate(r rune) bool {
 // DecodeRune returns the UTF-16 decoding of a surrogate pair.
 // If the pair is not a valid UTF-16 surrogate pair, DecodeRune returns
 // the Unicode replacement code point U+FFFD.
-func DecodeRune(r1, r2 rune) rune {
+func DecodeRune(r1, r2 rune) rune { // 一个utf16使用2个rune来表示叫surrogate pair,解析之后是一个rune.
 	if surr1 <= r1 && r1 < surr2 && surr2 <= r2 && r2 < surr3 {
-		return (r1-surr1)<<10 | (r2 - surr2) + surrSelf
+		return (r1-surr1)<<10 | (r2 - surr2) + surrSelf //高十位, 低十位, 加上surrself
 	}
 	return replacementChar
 }
@@ -49,14 +49,14 @@ func EncodeRune(r rune) (r1, r2 rune) {
 		return replacementChar, replacementChar
 	}
 	r -= surrSelf
-	return surr1 + (r>>10)&0x3ff, surr2 + r&0x3ff
+	return surr1 + (r>>10)&0x3ff, surr2 + r&0x3ff //这里之所以使用0x3ff是因为她=bin(十个1). 作为两个数位的切分.等于只保留最低的十位.
 }
 
 // Encode returns the UTF-16 encoding of the Unicode code point sequence s.
-func Encode(s []rune) []uint16 {
+func Encode(s []rune) []uint16 { // uint16是16位. utf16是用一个32位编码的.所以两个uint16组成一个utf16的rune.
 	n := len(s)
 	for _, v := range s {
-		if v >= surrSelf {
+		if v >= surrSelf { //大于这个surrsefl的才是一个合法的2个unit16表示,所以空间n++即可.计算出总共空间n了.
 			n++
 		}
 	}
@@ -86,7 +86,7 @@ func Encode(s []rune) []uint16 {
 // AppendRune appends the UTF-16 encoding of the Unicode code point r
 // to the end of p and returns the extended buffer. If the rune is not
 // a valid Unicode code point, it appends the encoding of U+FFFD.
-func AppendRune(a []uint16, r rune) []uint16 {
+func AppendRune(a []uint16, r rune) []uint16 { //同上
 	// This function is inlineable for fast handling of ASCII.
 	switch {
 	case 0 <= r && r < surr1, surr3 <= r && r < surrSelf:
@@ -111,7 +111,7 @@ func Decode(s []uint16) []rune {
 
 // decode appends to buf the Unicode code point sequence represented
 // by the UTF-16 encoding s and return the extended buffer.
-func decode(s []uint16, buf []rune) []rune {
+func decode(s []uint16, buf []rune) []rune { //同上.
 	for i := 0; i < len(s); i++ {
 		var ar rune
 		switch r := s[i]; {

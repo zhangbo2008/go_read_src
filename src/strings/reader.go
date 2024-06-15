@@ -14,16 +14,16 @@ import (
 // [io.RuneReader], [io.RuneScanner], [io.Seeker], and [io.WriterTo] interfaces by reading
 // from a string.
 // The zero value for Reader operates like a Reader of an empty string.
-type Reader struct {
-	s        string
-	i        int64 // current reading index
-	prevRune int   // index of previous rune; or < 0
+type Reader struct { //创造一个类,让他来做字符串的读取任务.
+	s        string //用来存数据
+	i        int64  // current reading index //当前开始读的话, 第一个读入的索引.
+	prevRune int    // index of previous rune; or < 0 //上一次读的rune的索引. 在 UnreadRune 函数中有重要使用.
 }
 
 // Len returns the number of bytes of the unread portion of the
 // string.
-func (r *Reader) Len() int {
-	if r.i >= int64(len(r.s)) {
+func (r *Reader) Len() int { //len函数返回字符串里面未读入的字符长度.
+	if r.i >= int64(len(r.s)) { //如果读的位置已经到尾, 那么返回0
 		return 0
 	}
 	return int(int64(len(r.s)) - r.i)
@@ -33,7 +33,7 @@ func (r *Reader) Len() int {
 // Size is the number of bytes available for reading via [Reader.ReadAt].
 // The returned value is always the same and is not affected by calls
 // to any other method.
-func (r *Reader) Size() int64 { return int64(len(r.s)) }
+func (r *Reader) Size() int64 { return int64(len(r.s)) } //返回字符串全部长度
 
 // Read implements the [io.Reader] interface.
 func (r *Reader) Read(b []byte) (n int, err error) {
@@ -41,13 +41,13 @@ func (r *Reader) Read(b []byte) (n int, err error) {
 		return 0, io.EOF
 	}
 	r.prevRune = -1
-	n = copy(b, r.s[r.i:])
+	n = copy(b, r.s[r.i:]) // 把字符串未读入的数据都放b里面, n是读了多少字符.然后索引i更新.
 	r.i += int64(n)
 	return
 }
 
 // ReadAt implements the [io.ReaderAt] interface.
-func (r *Reader) ReadAt(b []byte, off int64) (n int, err error) {
+func (r *Reader) ReadAt(b []byte, off int64) (n int, err error) { //类似同上
 	// cannot modify state - see io.ReaderAt
 	if off < 0 {
 		return 0, errors.New("strings.Reader.ReadAt: negative offset")
@@ -63,7 +63,7 @@ func (r *Reader) ReadAt(b []byte, off int64) (n int, err error) {
 }
 
 // ReadByte implements the [io.ByteReader] interface.
-func (r *Reader) ReadByte() (byte, error) {
+func (r *Reader) ReadByte() (byte, error) { //读一个字符
 	r.prevRune = -1
 	if r.i >= int64(len(r.s)) {
 		return 0, io.EOF
@@ -74,7 +74,7 @@ func (r *Reader) ReadByte() (byte, error) {
 }
 
 // UnreadByte implements the [io.ByteScanner] interface.
-func (r *Reader) UnreadByte() error {
+func (r *Reader) UnreadByte() error { //索引退一个
 	if r.i <= 0 {
 		return errors.New("strings.Reader.UnreadByte: at beginning of string")
 	}
@@ -84,7 +84,7 @@ func (r *Reader) UnreadByte() error {
 }
 
 // ReadRune implements the [io.RuneReader] interface.
-func (r *Reader) ReadRune() (ch rune, size int, err error) {
+func (r *Reader) ReadRune() (ch rune, size int, err error) { //从索引位往后读出一个rune记作ch,返回他的占用的byte数记作size
 	if r.i >= int64(len(r.s)) {
 		r.prevRune = -1
 		return 0, 0, io.EOF
@@ -113,7 +113,7 @@ func (r *Reader) UnreadRune() error {
 }
 
 // Seek implements the [io.Seeker] interface.
-func (r *Reader) Seek(offset int64, whence int) (int64, error) {
+func (r *Reader) Seek(offset int64, whence int) (int64, error) { //这个函数用来调整r里面的光标位置.//whence是开始位置, offset是 从whence开始计算的偏移位置, 是一个整数. 返回值是绝对位置. 并且写入r的索引里面.
 	r.prevRune = -1
 	var abs int64
 	switch whence {
@@ -125,12 +125,12 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		abs = int64(len(r.s)) + offset
 	default:
 		return 0, errors.New("strings.Reader.Seek: invalid whence")
-	}
+	} //先abs算出来索引位置最后的绝对位置.
 	if abs < 0 {
 		return 0, errors.New("strings.Reader.Seek: negative position")
 	}
-	r.i = abs
-	return abs, nil
+	r.i = abs       //绝对位置写入r的索引.
+	return abs, nil //返回绝对位置.
 }
 
 // WriteTo implements the [io.WriterTo] interface.

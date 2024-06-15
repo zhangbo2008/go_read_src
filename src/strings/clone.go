@@ -18,11 +18,11 @@ import (
 // profiling indicates that it is needed.
 // For strings of length zero the string "" will be returned
 // and no allocation is made.
-func Clone(s string) string {
+func Clone(s string) string { //返回s的副本
 	if len(s) == 0 {
 		return ""
 	}
 	b := make([]byte, len(s))
 	copy(b, s)
-	return unsafe.String(&b[0], len(b))
+	return unsafe.String(&b[0], len(b)) //生成一个新的string
 }

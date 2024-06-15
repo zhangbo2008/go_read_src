@@ -88,21 +88,21 @@ const (
 const linearMax = 18
 
 // is16 reports whether r is in the sorted slice of 16-bit ranges.
-func is16(ranges []Range16, r uint16) bool {
+func is16(ranges []Range16, r uint16) bool { // r是否在ranges里面. ranges是一堆range的数组.
 	if len(ranges) <= linearMax || r <= MaxLatin1 {
-		for i := range ranges {
+		for i := range ranges { //遍历索引
 			range_ := &ranges[i]
 			if r < range_.Lo {
 				return false
 			}
 			if r <= range_.Hi {
 				return range_.Stride == 1 || (r-range_.Lo)%range_.Stride == 0
-			}
+			} //判断r-低是不是步长的整数倍即可.
 		}
 		return false
 	}
 
-	// binary search over ranges
+	// binary search over ranges 二分
 	lo := 0
 	hi := len(ranges)
 	for lo < hi {
@@ -167,7 +167,7 @@ func Is(rangeTab *RangeTable, r rune) bool {
 	return false
 }
 
-func isExcludingLatin(rangeTab *RangeTable, r rune) bool {
+func isExcludingLatin(rangeTab *RangeTable, r rune) bool { //排除拉丁字母的in函数
 	r16 := rangeTab.R16
 	// Compare as uint32 to correctly handle negative runes.
 	if off := rangeTab.LatinOffset; len(r16) > off && uint32(r) <= uint32(r16[len(r16)-1].Hi) {
@@ -181,16 +181,16 @@ func isExcludingLatin(rangeTab *RangeTable, r rune) bool {
 }
 
 // IsUpper reports whether the rune is an upper case letter.
-func IsUpper(r rune) bool {
+func IsUpper(r rune) bool { //是否是大写字符
 	// See comment in IsGraphic.
 	if uint32(r) <= MaxLatin1 {
-		return properties[uint8(r)]&pLmask == pLu
+		return properties[uint8(r)]&pLmask == pLu //根据ascii码表可以算.pLmask 96显然是a的ascii码掩码.
 	}
 	return isExcludingLatin(Upper, r)
 }
 
 // IsLower reports whether the rune is a lower case letter.
-func IsLower(r rune) bool {
+func IsLower(r rune) bool { //是否小写
 	// See comment in IsGraphic.
 	if uint32(r) <= MaxLatin1 {
 		return properties[uint8(r)]&pLmask == pLl
@@ -198,15 +198,15 @@ func IsLower(r rune) bool {
 	return isExcludingLatin(Lower, r)
 }
 
-// IsTitle reports whether the rune is a title case letter.
+// IsTitle reports whether the rune is a title case letter. TITLE CASE翻译：（用于书名、电影名等的）词首字母大写。
 func IsTitle(r rune) bool {
 	if r <= MaxLatin1 {
 		return false
 	}
-	return isExcludingLatin(Title, r)
+	return isExcludingLatin(Title, r) // 根据Title表判断是不是in即可.
 }
 
-// to maps the rune using the specified case mapping.
+// to maps the rune using the specified case mapping.// 把r进行case转化, 返回mappedRune 和是否找到mapping ,映射使用的range是caseRange
 // It additionally reports whether caseRange contained a mapping for r.
 func to(_case int, r rune, caseRange []CaseRange) (mappedRune rune, foundMapping bool) {
 	if _case < 0 || MaxCase <= _case {
@@ -283,7 +283,7 @@ func ToTitle(r rune) rune {
 	return To(TitleCase, r)
 }
 
-// ToUpper maps the rune to upper case giving priority to the special mapping.
+// ToUpper maps the rune to upper case giving priority to the special mapping. //先进行specialcase的变化, 再进行普通变化.
 func (special SpecialCase) ToUpper(r rune) rune {
 	r1, hadMapping := to(UpperCase, r, []CaseRange(special))
 	if r1 == r && !hadMapping {
@@ -314,7 +314,7 @@ func (special SpecialCase) ToLower(r rune) rune {
 // entries fit in uint16, so use uint16. If that changes, compilation
 // will fail (the constants in the composite literal will not fit in uint16)
 // and the types here can change to uint32.
-type foldPair struct {
+type foldPair struct { //表示一个片段.
 	From uint16
 	To   uint16
 }
@@ -337,34 +337,35 @@ type foldPair struct {
 //	SimpleFold('1') = '1'
 //
 //	SimpleFold(-2) = -2
-func SimpleFold(r rune) rune {
+func SimpleFold(r rune) rune { //对于大小写的迭代函数.
 	if r < 0 || r > MaxRune {
 		return r
 	}
 
 	if int(r) < len(asciiFold) {
-		return rune(asciiFold[r])
+		return rune(asciiFold[r]) //对于ascii码的大小写转化.
 	}
 
-	// Consult caseOrbit table for special cases.
+	// Consult caseOrbit table for special cases.  二分法.找到r属于的区间. 最后匹配的区间索引记录为lo变量.
 	lo := 0
 	hi := len(caseOrbit)
 	for lo < hi {
 		m := int(uint(lo+hi) >> 1)
-		if rune(caseOrbit[m].From) < r {
+		if rune(caseOrbit[m].From) < r { //通过二分一直压缩范围.
 			lo = m + 1
 		} else {
 			hi = m
 		}
 	}
+
 	if lo < len(caseOrbit) && rune(caseOrbit[lo].From) == r {
-		return rune(caseOrbit[lo].To)
+		return rune(caseOrbit[lo].To) //如果找到的合法, 就变化即可.
 	}
 
 	// No folding specified. This is a one- or two-element
 	// equivalence class containing rune and ToLower(rune)
 	// and ToUpper(rune) if they are different from rune.
-	if l := ToLower(r); l != r {
+	if l := ToLower(r); l != r { //上面都找不到那么就lower, upper函数即可.
 		return l
 	}
 	return ToUpper(r)
