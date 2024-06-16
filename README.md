@@ -708,3 +708,27 @@ src里面从依赖最少得开始看:
 		可以看到每个文件都配有_test.go, 可以debug里面的测试代码加深理解.
 # src\strings\builder.go
 		builder是用来创建字符串的.
+# src\strings\clone.go
+# src\strings\compare.go
+# src\strings\reader.go
+	 提供了读取字符串数据的各个函数,也都比较简单.
+# src\strings\replace.go
+	 使用trie树来进行批量的线程安全的字符串替换工具.
+
+
+# src\strings\search.go
+	 bm算法的实现.用于批量的替换字符串.每一次替换很多组字符串对.
+
+# src\strings\strings.go
+	 一些字符串基本操作
+
+# strconv
+	 字符串的转化
+	 # src\strconv\atob.go  ascii到bool的转化
+	 # src\strconv\atoc.go  ascii到复数
+
+# math
+		里面有大量的汇编.文件结构是函数名_平台.s.里面很多函数都涉及数学上的算法.
+		我们只需要看amd64或者x86的即可.这俩是pc平台.如果不写平台的就是跨平台的,是必看的.
+
+		

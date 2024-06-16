@@ -8,8 +8,8 @@ package strings
 // using the Boyer-Moore string search algorithm:
 // https://en.wikipedia.org/wiki/Boyer-Moore_string_search_algorithm
 // https://www.cs.utexas.edu/~moore/publications/fstrpos.pdf (note: this aged
-// document uses 1-based indexing)
-type stringFinder struct {
+// document uses 1-based indexing)   // bm算法来找一个字符串的子串匹配. 这个算法比kmp一般快3倍.
+type stringFinder struct { //这个算法有2个思想,一个是坏的后缀, 一个是好的后缀,他们都能加速指针的遍历.//不了解这个的同学可以自己网上搜资料,整体比kmp算法要简单.
 	// pattern is the string that we are searching for in the text.
 	pattern string
 
@@ -45,7 +45,7 @@ type stringFinder struct {
 	goodSuffixSkip []int
 }
 
-func makeStringFinder(pattern string) *stringFinder {
+func makeStringFinder(pattern string) *stringFinder { //给定一个模式串, 那么我们可以计算这些skip值.用来加速匹配.
 	f := &stringFinder{
 		pattern:        pattern,
 		goodSuffixSkip: make([]int, len(pattern)),
@@ -88,7 +88,7 @@ func makeStringFinder(pattern string) *stringFinder {
 	return f
 }
 
-func longestCommonSuffix(a, b string) (i int) {
+func longestCommonSuffix(a, b string) (i int) { // a,b的最长公共后缀的长度.
 	for ; i < len(a) && i < len(b); i++ {
 		if a[len(a)-1-i] != b[len(b)-1-i] {
 			break
@@ -99,7 +99,7 @@ func longestCommonSuffix(a, b string) (i int) {
 
 // next returns the index in text of the first occurrence of the pattern. If
 // the pattern is not found, it returns -1.
-func (f *stringFinder) next(text string) int {
+func (f *stringFinder) next(text string) int { //给text, 返回text匹配模式串f.pattern的第一个出现的索引.
 	i := len(f.pattern) - 1
 	for i < len(text) {
 		// Compare backwards from the end until the first unmatching character.

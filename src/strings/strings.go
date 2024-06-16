@@ -18,7 +18,7 @@ const maxInt = int(^uint(0) >> 1)
 // explode splits s into a slice of UTF-8 strings,
 // one string per Unicode character up to a maximum of n (n < 0 means no limit).
 // Invalid UTF-8 bytes are sliced individually.
-func explode(s string, n int) []string {
+func explode(s string, n int) []string { // 把s这个string 拓展为 string的数组, 其中每一个元素都是一个utf8的编码.
 	l := utf8.RuneCountInString(s)
 	if n < 0 || n > l {
 		n = l
@@ -96,13 +96,13 @@ func LastIndex(s, substr string) int {
 	hashss, pow := bytealg.HashStrRev(substr)
 	last := len(s) - n
 	var h uint32
-	for i := len(s) - 1; i >= last; i-- {
+	for i := len(s) - 1; i >= last; i-- { //计算s 末尾长度为 substr这么长的哈希值.
 		h = h*bytealg.PrimeRK + uint32(s[i])
 	}
-	if h == hashss && s[last:] == substr {
+	if h == hashss && s[last:] == substr { //比较哈希值.
 		return last
 	}
-	for i := last - 1; i >= 0; i-- {
+	for i := last - 1; i >= 0; i-- { //动态算哈希值.
 		h *= bytealg.PrimeRK
 		h += uint32(s[i])
 		h -= pow * uint32(s[i+n])
@@ -142,7 +142,7 @@ func IndexRune(s string, r rune) int {
 
 // IndexAny returns the index of the first instance of any Unicode code point
 // from chars in s, or -1 if no Unicode code point from chars is present in s.
-func IndexAny(s, chars string) int {
+func IndexAny(s, chars string) int { // 返回:chars里面任意一个unicode字符, 在s中第一次出现的索引.
 	if chars == "" {
 		// Avoid scanning all of s.
 		return -1
@@ -156,7 +156,7 @@ func IndexAny(s, chars string) int {
 		return IndexRune(s, r)
 	}
 	if len(s) > 8 {
-		if as, isASCII := makeASCIISet(chars); isASCII {
+		if as, isASCII := makeASCIISet(chars); isASCII { //如果都是ascii码
 			for i := 0; i < len(s); i++ {
 				if as.contains(s[i]) {
 					return i
@@ -176,7 +176,7 @@ func IndexAny(s, chars string) int {
 // LastIndexAny returns the index of the last instance of any Unicode code
 // point from chars in s, or -1 if no Unicode code point from chars is
 // present in s.
-func LastIndexAny(s, chars string) int {
+func LastIndexAny(s, chars string) int { //上面的逆序
 	if chars == "" {
 		// Avoid scanning all of s.
 		return -1
@@ -232,7 +232,7 @@ func LastIndexByte(s string, c byte) int {
 
 // Generic split: splits after each instance of sep,
 // including sepSave bytes of sep in the subarrays.
-func genSplit(s, sep string, sepSave, n int) []string {
+func genSplit(s, sep string, sepSave, n int) []string { // s 按照sep进行分割, sepsave是每次分割多保存几个, n是最大分割后的个数,
 	if n == 0 {
 		return nil
 	}
@@ -259,7 +259,7 @@ func genSplit(s, sep string, sepSave, n int) []string {
 		i++
 	}
 	a[i] = s
-	return a[:i+1]
+	return a[:i+1] // 返回一个切片, 因为我们249行a大小是n, 后续很多空白的需要裁剪掉.
 }
 
 // SplitN slices s into substrings separated by sep and returns a slice of
@@ -275,7 +275,7 @@ func genSplit(s, sep string, sepSave, n int) []string {
 // as described in the documentation for [Split].
 //
 // To split around the first instance of a separator, see Cut.
-func SplitN(s, sep string, n int) []string { return genSplit(s, sep, 0, n) }
+func SplitN(s, sep string, n int) []string { return genSplit(s, sep, 0, n) } //同上
 
 // SplitAfterN slices s into substrings after each instance of sep and
 // returns a slice of those substrings.
@@ -288,7 +288,7 @@ func SplitN(s, sep string, n int) []string { return genSplit(s, sep, 0, n) }
 //
 // Edge cases for s and sep (for example, empty strings) are handled
 // as described in the documentation for SplitAfter.
-func SplitAfterN(s, sep string, n int) []string {
+func SplitAfterN(s, sep string, n int) []string { //分割sep后结果包含sep
 	return genSplit(s, sep, len(sep), n)
 }
 
@@ -322,21 +322,50 @@ func SplitAfter(s, sep string) []string {
 
 var asciiSpace = [256]uint8{'\t': 1, '\n': 1, '\v': 1, '\f': 1, '\r': 1, ' ': 1}
 
+/*  这个是数组的定义方式. 用索引:值来定义. 可以运行下面代码来加强理解:
+package main
+
+import (
+	"fmt"
+)
+
+type asciiSet [8]uint32
+
+var asciiSpace = [256]uint8{'\t': 1, '\n': 1, '\v': 1, '\f': 1, '\r': 1, ' ': 1, 20: 1}
+
+func main() {
+	for index, value := range asciiSpace {
+		if value != 0 {
+			fmt.Println(index, value)
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+*/
+
 // Fields splits the string s around each instance of one or more consecutive white space
 // characters, as defined by unicode.IsSpace, returning a slice of substrings of s or an
 // empty slice if s contains only white space.
-func Fields(s string) []string {
+func Fields(s string) []string { // 这个函数按照空白字符(一个或多个空白)进行字符串的切割.
 	// First count the fields.
 	// This is an exact count if s is ASCII, otherwise it is an approximation.
 	n := 0
-	wasSpace := 1
+	wasSpace := 1 //记录上一个char是不是space
 	// setBits is used to track which bits are set in the bytes of s.
 	setBits := uint8(0)
 	for i := 0; i < len(s); i++ {
-		r := s[i]
+		r := s[i] // s[i]的低8位我们记录到setBits位图里面.
 		setBits |= r
 		isSpace := int(asciiSpace[r])
-		n += wasSpace & ^isSpace
+		n += wasSpace & ^isSpace //n是用来记录分割后的数量的, 当前字符非空格, 之前字符是空格,这时候就切割数n+1
 		wasSpace = isSpace
 	}
 
@@ -355,11 +384,11 @@ func Fields(s string) []string {
 	}
 	fieldStart = i
 	for i < len(s) {
-		if asciiSpace[s[i]] == 0 {
+		if asciiSpace[s[i]] == 0 { //从开始索引找是空格的.
 			i++
 			continue
 		}
-		a[na] = s[fieldStart:i]
+		a[na] = s[fieldStart:i] //写入
 		na++
 		i++
 		// Skip spaces in between fields.
@@ -380,7 +409,7 @@ func Fields(s string) []string {
 //
 // FieldsFunc makes no guarantees about the order in which it calls f(c)
 // and assumes that f always returns the same value for a given c.
-func FieldsFunc(s string, f func(rune) bool) []string {
+func FieldsFunc(s string, f func(rune) bool) []string { // 满足f(c)==True的字符进行切割.
 	// A span is used to record a slice of s of the form s[start:end].
 	// The start index is inclusive and the end index is exclusive.
 	type span struct {
@@ -470,7 +499,7 @@ func HasSuffix(s, suffix string) bool {
 
 // Map returns a copy of the string s with all its characters modified
 // according to the mapping function. If mapping returns a negative value, the character is
-// dropped from the string with no replacement.
+// dropped from the string with no replacement. //并且这个函数mapping, 要求如果返回负数,表示被处理的字符被舍弃. //整个函数Map 返回 s可以被转化的部分,之前无法转化的也保留.
 func Map(mapping func(rune) rune, s string) string {
 	// In the worst case, the string can grow when mapped, making
 	// things unpleasant. But it's so rare we barge in assuming it's
@@ -480,9 +509,9 @@ func Map(mapping func(rune) rune, s string) string {
 	// time a character differs.
 	var b Builder
 
-	for i, c := range s {
+	for i, c := range s { // 这个部分写入合法转化的原始s
 		r := mapping(c)
-		if r == c && c != utf8.RuneError {
+		if r == c && c != utf8.RuneError { // 变化后一样, 就跳过不处理.
 			continue
 		}
 
@@ -493,25 +522,25 @@ func Map(mapping func(rune) rune, s string) string {
 				continue
 			}
 		} else {
-			width = utf8.RuneLen(c)
+			width = utf8.RuneLen(c) //这里成功解析一个合法的.
 		}
 
 		b.Grow(len(s) + utf8.UTFMax)
-		b.WriteString(s[:i])
+		b.WriteString(s[:i]) //写入之前不能转化的字符.
 		if r >= 0 {
 			b.WriteRune(r)
 		}
 
-		s = s[i+width:]
+		s = s[i+width:] //把转化完的部分给他去掉.
 		break
 	}
 
-	// Fast path for unchanged input
+	// Fast path for unchanged input //如果b里面空, 那么还是返回原始的string
 	if b.Cap() == 0 { // didn't call b.Grow above
 		return s
 	}
 
-	for _, c := range s {
+	for _, c := range s { //这个部分写入转化后的字符串.
 		r := mapping(c)
 
 		if r >= 0 {
@@ -534,7 +563,7 @@ func Map(mapping func(rune) rune, s string) string {
 //
 // It panics if count is negative or if the result of (len(s) * count)
 // overflows.
-func Repeat(s string, count int) string {
+func Repeat(s string, count int) string { //返回s乘以count遍的字符串.
 	switch count {
 	case 0:
 		return ""
@@ -866,19 +895,19 @@ func lastIndexFunc(s string, f func(rune) bool, truth bool) int {
 // ensuring that any non-ASCII character will be reported as not in the set.
 // This allocates a total of 32 bytes even though the upper half
 // is unused to avoid bounds checks in asciiSet.contains.
-type asciiSet [8]uint32
+type asciiSet [8]uint32 // 8个32位, 所以一共表示256的位图.
 
 // makeASCIISet creates a set of ASCII characters and reports whether all
-// characters in chars are ASCII.
+// characters in chars are ASCII. //如果chars都是ascii码,那么返回位图,true, 否则返回false
 func makeASCIISet(chars string) (as asciiSet, ok bool) {
 	for i := 0; i < len(chars); i++ {
 		c := chars[i]
-		if c >= utf8.RuneSelf {
+		if c >= utf8.RuneSelf { // ascii吗一共是128个.
 			return as, false
 		}
-		as[c/32] |= 1 << (c % 32)
+		as[c/32] |= 1 << (c % 32) //写入位图.
 	}
-	return as, true
+	return as, true //返回位图, 并且chars都在ascii码里面.
 }
 
 // contains reports whether c is inside the set.
@@ -1270,7 +1299,7 @@ func Index(s, substr string) int {
 // returning the text before and after sep.
 // The found result reports whether sep appears in s.
 // If sep does not appear in s, cut returns s, "", false.
-func Cut(s, sep string) (before, after string, found bool) {
+func Cut(s, sep string) (before, after string, found bool) { // sep在s里面, 就把他的前面, 他的后面, 分别返回.
 	if i := Index(s, sep); i >= 0 {
 		return s[:i], s[i+len(sep):], true
 	}

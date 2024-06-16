@@ -1,14 +1,17 @@
 package main
 
 import (
-	"math"
+	"fmt"
 )
 
-const zero = 121.11
+type asciiSet [8]uint32
+
+var asciiSpace = [256]uint8{'\t': 1, '\n': 1, '\v': 1, '\f': 1, '\r': 1, ' ': 1, 20: 1}
 
 func main() {
-
-	x := -float64(zero)
-	b := math.Float64bits(x)
-	print(b)
+	for index, value := range asciiSpace {
+		if value != 0 {
+			fmt.Println(index, value)
+		}
+	}
 }

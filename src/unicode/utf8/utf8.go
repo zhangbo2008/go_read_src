@@ -196,7 +196,7 @@ func DecodeRune(p []byte) (r rune, size int) {
 // An encoding is invalid if it is incorrect UTF-8, encodes a rune that is
 // out of range, or is not the shortest possible UTF-8 encoding for the
 // value. No other validation is performed.
-func DecodeRuneInString(s string) (r rune, size int) {
+func DecodeRuneInString(s string) (r rune, size int) { // 解析s的第一个rune, rune占用byte数记作size
 	n := len(s)
 	if n < 1 {
 		return RuneError, 0

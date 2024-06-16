@@ -18,7 +18,7 @@ type Replacer struct {
 }
 
 // replacer is the interface that a replacement algorithm needs to implement.
-type replacer interface {
+type replacer interface { // 表示一个替换的算法 的接口
 	Replace(s string) string
 	WriteString(w io.Writer, s string) (n int, err error)
 }
@@ -29,7 +29,7 @@ type replacer interface {
 // comparisons are done in argument order.
 //
 // NewReplacer panics if given an odd number of arguments.
-func NewReplacer(oldnew ...string) *Replacer {
+func NewReplacer(oldnew ...string) *Replacer { // 输入一堆string, 返回一个replacer
 	if len(oldnew)%2 == 1 {
 		panic("strings.NewReplacer: odd argument count")
 	}
@@ -42,9 +42,9 @@ func (r *Replacer) buildOnce() {
 }
 
 func (b *Replacer) build() replacer {
-	oldnew := b.oldnew
+	oldnew := b.oldnew // old new是一个数组, 里面先old, 再new 然后再old ,再new... 排列.
 	if len(oldnew) == 2 && len(oldnew[0]) > 1 {
-		return makeSingleStringReplacer(oldnew[0], oldnew[1])
+		return makeSingleStringReplacer(oldnew[0], oldnew[1]) //但字符串替换即可.
 	}
 
 	allNewBytes := true

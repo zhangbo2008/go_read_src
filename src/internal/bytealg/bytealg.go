@@ -49,7 +49,7 @@ func HashStr[T string | []byte](sep T) (uint32, uint32) {
 func HashStrRev[T string | []byte](sep T) (uint32, uint32) {
 	hash := uint32(0)
 	for i := len(sep) - 1; i >= 0; i-- {
-		hash = hash*PrimeRK + uint32(sep[i])
+		hash = hash*PrimeRK + uint32(sep[i]) //字符串的二进制看做一个整数.然后进行哈希. 哈希算法是每次旧的乘以大素数, 加上新的位置的值.
 	}
 	var pow, sq uint32 = 1, PrimeRK
 	for i := len(sep); i > 0; i >>= 1 {
@@ -57,7 +57,7 @@ func HashStrRev[T string | []byte](sep T) (uint32, uint32) {
 			pow *= sq
 		}
 		sq *= sq
-	}
+	} //得到pow=PrimeRK**uint(sep)
 	return hash, pow
 }
 

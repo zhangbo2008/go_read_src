@@ -134,13 +134,13 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) { //这个函数�
 }
 
 // WriteTo implements the [io.WriterTo] interface.
-func (r *Reader) WriteTo(w io.Writer) (n int64, err error) {
+func (r *Reader) WriteTo(w io.Writer) (n int64, err error) { //入参是一个 writer, 然后我们把r的信息写入w里面. 写了多少记作n
 	r.prevRune = -1
 	if r.i >= int64(len(r.s)) {
 		return 0, nil
 	}
 	s := r.s[r.i:]
-	m, err := io.WriteString(w, s)
+	m, err := io.WriteString(w, s) //往w里面写s
 	if m > len(s) {
 		panic("strings.Reader.WriteTo: invalid WriteString count")
 	}
@@ -153,8 +153,8 @@ func (r *Reader) WriteTo(w io.Writer) (n int64, err error) {
 }
 
 // Reset resets the [Reader] to be reading from s.
-func (r *Reader) Reset(s string) { *r = Reader{s, 0, -1} }
+func (r *Reader) Reset(s string) { *r = Reader{s, 0, -1} } // 最后的rune=-1表示没读
 
 // NewReader returns a new [Reader] reading from s.
 // It is similar to [bytes.NewBufferString] but more efficient and non-writable.
-func NewReader(s string) *Reader { return &Reader{s, 0, -1} }
+func NewReader(s string) *Reader { return &Reader{s, 0, -1} } //新reader, 就是从index0开始, 上一个rune设置为-1表示没有.

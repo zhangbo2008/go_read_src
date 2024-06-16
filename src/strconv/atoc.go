@@ -6,6 +6,32 @@ package strconv
 
 const fnParseComplex = "ParseComplex"
 
+/*
+
+这里涉及go的类型转化.
+1. 数值类型转换 :var a int = 10
+               var b float64 = float64(a)
+2. 字符串类型转换:
+							var str string = "10"
+							var num int
+							num, _ = strconv.Atoi(str)
+3. 接口类型转换:
+							package main
+
+							import "fmt"
+
+							func main() {
+									var i interface{} = "Hello, World"
+									str, ok := i.(string)      //接口时候是数据.(类型)
+									if ok {
+											fmt.Printf("'%s' is a string\n", str)
+									} else {
+											fmt.Println("conversion failed")
+									}
+							}
+
+*/
+
 // convErr splits an error returned by parseFloatPrefix
 // into a syntax or range error for ParseComplex.
 func convErr(err error, s string) (syntax, range_ error) {
