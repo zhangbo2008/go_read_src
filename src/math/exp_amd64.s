@@ -25,7 +25,7 @@
 #define NegInf 0xFFF0000000000000
 #define Overflow 7.09782712893384e+02
 
-DATA exprodata<>+0(SB)/8, $0.5
+DATA exprodata<>+0(SB)/8, $0.5           //DATA命令用于往SB里面放全局变量. $后面加数字表示立即数, 加变量表示他的地址.
 DATA exprodata<>+8(SB)/8, $1.0
 DATA exprodata<>+16(SB)/8, $2.0
 DATA exprodata<>+24(SB)/8, $1.6666666666666666667e-1

@@ -7,7 +7,7 @@ package math
 /*
 	Floating-point arctangent.
 */
-
+// 整个atan使用多项式来近似计算.
 // The original C code, the long comment, and the constants below were
 // from http://netlib.sandia.gov/cephes/cmath/atan.c, available from
 // http://www.netlib.org/cephes/cmath.tgz.
@@ -51,7 +51,7 @@ package math
 //   Stephen L. Moshier
 //   moshier@na-net.ornl.gov
 
-// xatan evaluates a series valid in the range [0, 0.66].
+// xatan evaluates a series valid in the range [0, 0.66].  #就是使用多项式来近似计算.
 func xatan(x float64) float64 {
 	const (
 		P0 = -8.750608600031904122785e-01
@@ -72,7 +72,7 @@ func xatan(x float64) float64 {
 }
 
 // satan reduces its argument (known to be positive)
-// to the range [0, 0.66] and calls xatan.
+// to the range [0, 0.66] and calls xatan. // satan只接受float
 func satan(x float64) float64 {
 	const (
 		Morebits = 6.123233995736765886130e-17 // pi/2 = PIO2 + Morebits

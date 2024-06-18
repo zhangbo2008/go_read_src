@@ -52,7 +52,7 @@ func IsInf(f float64, sign int) bool {
 }
 
 // normalize returns a normal number y and exponent exp
-// satisfying x == y × 2**exp. It assumes x is finite and non-zero.
+// satisfying x == y × 2**exp. It assumes x is finite and non-zero.// 把一个数转科学计数法. 这里需要懂IEEE 754的浮点数定义. https://blog.csdn.net/weixin_47713503/article/details/108699001 , 看到这里写了长浮点数的尾数数码是52长度.就是我们这里代码需要的值. 长浮点数就是float64的别称.
 func normalize(x float64) (y float64, exp int) {
 	const SmallestNormal = 2.2250738585072014e-308 // 2**-1022
 	if Abs(x) < SmallestNormal {

@@ -18,7 +18,7 @@ package math
 // is preserved.
 // ====================================================
 //
-//
+// //具体的函数定义acosh可以看 https://ww2.mathworks.cn/help/matlab/ref/acosh.html
 // __ieee754_acosh(x)
 // Method :
 //	Based on
@@ -27,7 +27,7 @@ package math
 //	        acosh(x) := log(x)+ln2,	if x is large; else
 //	        acosh(x) := log(2x-1/(sqrt(x*x-1)+x)) if x>2; else
 //	        acosh(x) := log1p(t+sqrt(2.0*t+t*t)); where t=x-1.
-//
+// 上述公式的证明是trivial的,简单展开即可. 至于为什么这么计算, 是因为第一个误差足够忽略了,第二个是为了避免整出超界, 原始公式直接算x方会导致整数溢出. 变化后的公式, 平方在分母操作,即使整数溢出了,比如超出2的64次幂了.那么再取倒数,也不会跟真实结果差距过大. 所以是一个更加科学的计算方式, 这个例子就告诉我们,时刻要考虑大整数的计算范围, 至于第三个是因为log1p会有更快的计算优化.
 // Special cases:
 //	acosh(x) is NaN with signal if x<1.
 //	acosh(NaN) is NaN without signal.

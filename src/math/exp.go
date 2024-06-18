@@ -35,7 +35,7 @@ func Exp(x float64) float64 {
 //
 //
 // exp(x)
-// Returns the exponential of x.
+// Returns the exponential of x.       //整个代码就是翻译下面注释里面的算法.
 //
 // Method
 //   1. Argument reduction:
@@ -45,10 +45,10 @@ func Exp(x float64) float64 {
 //               x = k*ln2 + r,  |r| <= 0.5*ln2.
 //
 //      Here r will be represented as r = hi-lo for better
-//      accuracy.
+//      accuracy.  把x拆成ln2的整数倍,加一个余数. 余数小于等于0.5*ln2
 //
 //   2. Approximation of exp(r) by a special rational function on
-//      the interval [0,0.34658]:
+//      the interval [0,0.34658]:  有理多项式函数的近似.
 //      Write
 //          R(r**2) = r*(exp(r)+1)/(exp(r)-1) = 2 + r*r/6 - r**4/360 + ...
 //      We use a special Remez algorithm on [0,0.34658] to generate

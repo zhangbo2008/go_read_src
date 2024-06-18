@@ -810,16 +810,34 @@ src里面从依赖最少得开始看:
 	 # src\strconv\atoi.go 字符串到int
 	 # src\strconv\bytealg.go  字符串index函数.
 			src\strconv\bytealg.go:13行 引用的是 src\internal\bytealg\indexbyte_native.go:13行
-			根据cpu架构我们找到这里面的IndexByteString 和 IndexByte 函数实际上实现是
-			src\internal\bytealg\indexbyte_arm64.s 里面的
-			TEXT ·IndexByte(SB),NOSPLIT,$0-40函数和TEXT ·IndexByteString(SB),NOSPLIT,$0-32函数.
-			具体代码分析见src\internal\bytealg\indexbyte_arm64.s的注释.
+			实际实现在src\internal\bytealg\indexbyte_generic.go
+			src\internal\bytealg\indexbyte_generic.go:9 里面写了如何用这个go生成各个平台的汇编代码.
+			汇编会涉及一些类型的底层实现:
+			type slice struct {//切片
+				array unsafe.Pointer
+				len int
+				cap int
+			}
+			一个[]byte​ 自然也没有什么特殊的， 也是这样的一个slice​结构， 其中的array​指向一个byte array​。
+			type strStruct struct {//string
+				str unsafe.Pointer
+				len int
+			}
+			这样我们就可以解释汇编代码了.
+			```
+TEXT	·IndexByte(SB), NOSPLIT, $0-40
+	MOVQ b_base+0(FP), SI   //b_base是一个Pointer所以占用8位
+	MOVQ b_len+8(FP), BX   //这里其实是b_len和b_cap两个int,所以占用16位.
+	MOVB c+24(FP), AL      //c是int所以占用8位.
+	LEAQ ret+32(FP), R8         
+	JMP  indexbytebody<>(SB)
+			
+			```
+# src\strconv\isprint.go
+	一些编码是否可以打印编码有32位和16位的
 
-
-
-
-
-
+# src\strconv\itoa.go
+  整数到字符串
 
 
 
@@ -843,6 +861,7 @@ src里面从依赖最少得开始看:
 	这个bug的解决办法就是在go汇编代码最后换一行就行了
 
 
+	https://blog.csdn.net/qq_17818281/article/details/114891093
 
 
 
@@ -859,3 +878,47 @@ src里面从依赖最少得开始看:
 		我们只需要看amd64或者x86的即可.这俩是pc平台.如果不写平台的就是跨平台的,是必看的.
 
 		
+		先看math里面根目录的代码, 他们依赖最少.都是一些数学运算不涉及过多代码设计.
+		最底层是
+
+		# src\math\unsafe.go 
+		这个代码通过unsafe的指针转化来进行float32 跟bits float64跟bits的互化.
+
+		# src\math\abs.go
+		# src\math\acosh.go
+		里面有函数避免整数溢出的优化策略
+
+		# src\math\const.go
+			一些常数. pi, E啊啥的, 都是多少位的近似值.
+		# src\math\atan.go
+			利用多项式近似计算.
+		# src\math\asin.go
+			利用atan来计算.
+		# src\math\atan2.go
+		  也是利用atan
+		# src\math\atanh.go
+		  里面也是用了分段函数,来保证计算的最大程度精确.
+		# src\math\bits.go
+		  是一些特殊数值的定义.无穷,负无穷等和太小的数归一化的方法.
+		# src\math\cbrt.go
+		  三次开根号算法.牛顿法
+
+
+		# src\math\dim.go
+			一些比较大小函数.
+		# src\math\erf.go    src\math\erfinv.go
+		  函数erf(x)在数学中为误差函数（也称之为高斯误差函数，error function or Gauss error function），是一个非基本函数（即不是初等函数），其在概率论、统计学以及偏微分方程和半导体物理中都有广泛的应用。是比较高级的函数,涉及一些复杂算法, 这里就不展开了.
+		# src\math\exp.go src\math\expm1.go
+		  exp函数,底层也是用多项式来近似.
+			对于我们amd64平台底层实现是用汇编来加速:(先读懂exp.go的代码,然后再读相关的汇编代码,算法思路都是一样的只是实现的语言不同,并且exp.go里面注释给了算法说明.汇编代码里面没有算法说明.)
+			src\math\exp_amd64.s
+			使用taylor展开式来近似计算.
+
+
+		# src\math\fma.go
+		  加速版本的 求x*y+z, 底层思想是用位运算加速, 具体细节比较复杂.
+		# src\math\frexp.go
+			对一个浮点数进行2的次幂拆分: f == frac × 2**exp,也是用位运算加速.
+		# src\math\log.go
+			83行看到,如果平台支持,那么就使用汇编来计算log
+			根据我们的平台,底层实现是src\math\log_amd64.s

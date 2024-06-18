@@ -11,7 +11,7 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 	MOVQ b_base+0(FP), SI
 	MOVQ b_len+8(FP), BX
 	MOVB c+24(FP), AL
-	LEAQ ret+32(FP), R8
+	LEAQ ret+32(FP), R8         
 	JMP  indexbytebody<>(SB)
 
 TEXT	·IndexByteString(SB), NOSPLIT, $0-32

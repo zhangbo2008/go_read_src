@@ -2,14 +2,18 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#include "textflag.h"    //具体地址在src\runtime\textflag.h
+#include "textflag.h"    //具体地址在src\runtime\textflag.h //里面定义的值是一些位图.这些flag可以做交并运算.
 
-TEXT ·IndexByte(SB),NOSPLIT,$0-40
+TEXT ·IndexByte(SB),NOSPLIT,$0-40 //函数的go原型: func IndexByte(b []byte, c byte) int//根据函数名字可以猜到,函数是输入一个byte数组记作b, 一个byte记作c, 然后返回c在b中的索引.
 	MOVD	b_base+0(FP), R0
-	MOVD	b_len+8(FP), R2
-	MOVBU	c+24(FP), R1
-	MOVD	$ret+32(FP), R8
+	MOVD	b_len+8(FP), R2            
+	MOVBU	c+24(FP), R1               //BU是无符号byte
+	MOVD	$ret+32(FP), R8           //$这里是取地址符号,go里面$4是立即数的意思.也就是常数.
 	B	indexbytebody<>(SB)
+																	//mov系列:MOVB $1, AX   : 1 byte     MOVW $1, AX   : 2 bytes   MOVD $1, AX   : 4 bytes  这里面D全程是double world MOVQ $1, AX     : 8 bytes
+
+
+
 
 TEXT ·IndexByteString(SB),NOSPLIT,$0-32
 	MOVD	s_base+0(FP), R0

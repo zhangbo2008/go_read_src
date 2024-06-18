@@ -8,13 +8,13 @@ import "unsafe"
 
 // Float32bits returns the IEEE 754 binary representation of f,
 // with the sign bit of f and the result in the same bit position.
-// Float32bits(Float32frombits(x)) == x.
+// Float32bits(Float32frombits(x)) == x.// 输入一个float32, 输出他的bit所表示的uint32模式.
 func Float32bits(f float32) uint32 { return *(*uint32)(unsafe.Pointer(&f)) }
 
 // Float32frombits returns the floating-point number corresponding
 // to the IEEE 754 binary representation b, with the sign bit of b
 // and the result in the same bit position.
-// Float32frombits(Float32bits(x)) == x.
+// Float32frombits(Float32bits(x)) == x.  //输入一个uint32表示的二进制bit数据, 输出这个数据表示的float32的值.
 func Float32frombits(b uint32) float32 { return *(*float32)(unsafe.Pointer(&b)) }
 
 // Float64bits returns the IEEE 754 binary representation of f,

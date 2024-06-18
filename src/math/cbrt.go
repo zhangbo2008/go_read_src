@@ -55,7 +55,7 @@ func cbrt(x float64) float64 {
 
 	// rough cbrt to 5 bits
 	t := Float64frombits(Float64bits(x)/3 + B1<<32)
-	if x < SmallestNormal {
+	if x < SmallestNormal { //太小的, 进行放大,归一化.
 		// subnormal number
 		t = float64(1 << 54) // set t= 2**54
 		t *= x

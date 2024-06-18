@@ -5,7 +5,7 @@
 package math
 
 /*
-	Floating-point arcsine and arccosine.
+	Floating-point arcsine and arccosine.  //浮点数的 arcsin arccos函数.
 
 	They are implemented by computing the arctangent
 	after appropriate range reduction.
@@ -37,13 +37,13 @@ func asin(x float64) float64 {
 		return NaN() // special case
 	}
 
-	temp := Sqrt(1 - x*x)
-	if x > 0.7 {
+	temp := Sqrt(1 - x*x) //temp就是cosin值.
+	if x > 0.7 {          // 0.7是平方接近0.5的值. 也就是让后续temp跟x互相除之后得到一个小于1的.  tan(90-alpah)=1/ tan(alpha)
 		temp = Pi/2 - satan(temp/x)
 	} else {
 		temp = satan(x / temp)
 	}
-
+	//到这里temp就得到了角度.
 	if sign {
 		temp = -temp
 	}
