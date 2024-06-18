@@ -35,9 +35,9 @@ const fnParseComplex = "ParseComplex"
 // convErr splits an error returned by parseFloatPrefix
 // into a syntax or range error for ParseComplex.
 func convErr(err error, s string) (syntax, range_ error) {
-	if x, ok := err.(*NumError); ok {
-		x.Func = fnParseComplex
-		x.Num = cloneString(s)
+	if x, ok := err.(*NumError); ok { // NumError是err的特殊实现.所以可以尝试转化. 父类转子类: 这里 接口变量.(接口实现类的类型) 的操作可以理解为将父类类型强制转换为子类类型后返回，但是转换的前提是，实现类必须实现了当前接口的所有方法才行，否则go编译会报错
+		x.Func = fnParseComplex //写入错误的函数
+		x.Num = cloneString(s)  //写入错误函数的input值.
 		if x.Err == ErrRange {
 			return nil, x
 		}
@@ -65,7 +65,7 @@ func convErr(err error, s string) (syntax, range_ error) {
 // If s is syntactically well-formed but either component is more than 1/2 ULP
 // away from the largest floating point number of the given component's size,
 // ParseComplex returns err.Err = ErrRange and c = ±Inf for the respective component.
-func ParseComplex(s string, bitSize int) (complex128, error) {
+func ParseComplex(s string, bitSize int) (complex128, error) { // 给字符s, s的bit长度. 返回转化后的复数.
 	size := 64
 	if bitSize == 64 {
 		size = 32 // complex64 uses float32 parts

@@ -46,7 +46,7 @@ func HashStr[T string | []byte](sep T) (uint32, uint32) {
 
 // HashStrRev returns the hash of the reverse of sep and the
 // appropriate multiplicative factor for use in Rabin-Karp algorithm.
-func HashStrRev[T string | []byte](sep T) (uint32, uint32) {
+func HashStrRev[T string | []byte](sep T) (uint32, uint32) { // 这里面T是泛型, 表示sep这个变量, 可以是string, 也可以是[]byte. 然后我们返回他的哈希值, 和pow 两个大整数.
 	hash := uint32(0)
 	for i := len(sep) - 1; i >= 0; i-- {
 		hash = hash*PrimeRK + uint32(sep[i]) //字符串的二进制看做一个整数.然后进行哈希. 哈希算法是每次旧的乘以大素数, 加上新的位置的值.

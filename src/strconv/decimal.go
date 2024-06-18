@@ -7,20 +7,31 @@
 // Only operations are assign and (binary) left/right shift.
 // Can do binary floating point in multiprecision decimal precisely
 // because 2 divides 10; cannot do decimal floating point
-// in multiprecision binary precisely.
+// in multiprecision binary precisely. 二进制的float可以精确, 十进制的float没法精确. 总感觉这个库包意义不大, 因为我们现实中就是十进制的float. 但是他没法精准计算.不推荐使用这个来算浮点数.
 
 package strconv
 
+// 1）Little-endian：将低序字节存储在起始地址（低位编址）
+// 2）Big-endian：将高序字节存储在起始地址（高位编址）
+// 记忆: 关注地址的开始地址存什么, 开始存高bit, 就叫大字节序. endian:是end单词加一个后缀表示字节的顺序. 高bit,表示的是大的数. 比如bin(11)里面第一个1表示2, 第二个1表示1.所以就记住了.地址上来就记录大的数就是大endian, 地址上来记录小地址就是小endian.
+// 如果我们将0x1234abcd写入到以0x0000开始的内存中，则结果为；
+
+// address	big-endian	little-endian
+// 0x0000		0x12				0xcd
+// 0x0001		0x34				0xab
+// 0x0002		0xab				0x34
+// 0x0003		0xcd				0x12
+
 type decimal struct {
 	d     [800]byte // digits, big-endian representation
-	nd    int       // number of digits used
-	dp    int       // decimal point
-	neg   bool      // negative flag
-	trunc bool      // discarded nonzero digits beyond d[:nd]
+	nd    int       // number of digits used   使用了多少个数字
+	dp    int       // decimal point           小数点的位置
+	neg   bool      // negative flag           符号
+	trunc bool      // discarded nonzero digits beyond d[:nd] 是否进行截断
 }
 
 func (a *decimal) String() string {
-	n := 10 + a.nd
+	n := 10 + a.nd //空间开大一点, 因为后续可能需要补小数点跟数字之间缺少的0.
 	if a.dp > 0 {
 		n += a.dp
 	}
@@ -40,7 +51,7 @@ func (a *decimal) String() string {
 		w++
 		buf[w] = '.'
 		w++
-		w += digitZero(buf[w : w+-a.dp])
+		w += digitZero(buf[w : w+-a.dp]) //补0
 		w += copy(buf[w:], a.d[0:a.nd])
 
 	case a.dp < a.nd:
@@ -78,26 +89,26 @@ func trim(a *decimal) {
 }
 
 // Assign v to a.
-func (a *decimal) Assign(v uint64) {
-	var buf [24]byte
+func (a *decimal) Assign(v uint64) { // 把一个整数转成decimal格式.
+	var buf [24]byte //2的64次幂, 足够10的24次幂来存了.
 
 	// Write reversed decimal in buf.
 	n := 0
 	for v > 0 {
 		v1 := v / 10
-		v -= 10 * v1
-		buf[n] = byte(v + '0')
+		v -= 10 * v1           //v得到最低位.
+		buf[n] = byte(v + '0') //10进制的数当成字符串写入buf,所以这个是little endian
 		n++
 		v = v1
 	}
 
-	// Reverse again to produce forward decimal in a.d.
+	// Reverse again to produce forward decimal in a.d. //逆序成big enidan
 	a.nd = 0
 	for n--; n >= 0; n-- {
 		a.d[a.nd] = buf[n]
 		a.nd++
 	}
-	a.dp = a.nd
+	a.dp = a.nd //因为是整数, 所以小数点位置是最后一位数字+1
 	trim(a)
 }
 

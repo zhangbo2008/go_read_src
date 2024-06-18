@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#include "textflag.h"
+#include "textflag.h"    //具体地址在src\runtime\textflag.h
 
 TEXT ·IndexByte(SB),NOSPLIT,$0-40
 	MOVD	b_base+0(FP), R0

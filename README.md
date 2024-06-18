@@ -2,7 +2,7 @@
 研究go的源码 看的最新的1.22.4
 我会把整个学习过程都写在这个readme.md里面.希望后续可以整理成博客或者书.
 
-
+##首先是基础知识部分.
 #plan 9汇编:
 
 
@@ -22,6 +22,18 @@ How to Use the Plan 9 C Compiler
 一套另外的中文教程: 非常好.
 https://golang.design/under-the-hood/zh-cn/part1basic/ch01basic/asm/
 
+
+
+
+一份很详细的博客:
+https://blog.csdn.net/zhu0902150102/article/details/129539307
+
+
+
+
+
+
+
 Go语言汇编:
 https://9p.io/sys/doc/asm.html      原始资料的地址.
 Plan 9汇编
@@ -37,7 +49,73 @@ SP是local stack pointer，保存自动变量。0(SP)是第一个。
 
 TOS是top of stack寄存器，用来保存过程的参数，保存局部变量。
 
-汇编器可以有一个变量名，比如p+0(FP)，表示p是第一个参数，这个变量保存在符号表内，但是对程序运行没有影响。
+汇编器可以有一个变量名，比如p+0(FP)，表示p是第一个参数，这个变量保存在符号表内，但是对程序运行没有影响。实际有用的是 0(FP), 左边那个p只是给程序员看的. 对于计算机没用.但是要求必须写,
+
+例子:下面2个代码都是等效的.都可以直接go run main.go
+```
+//add.s:
+TEXT ·Sum(SB), $0-8
+    MOVQ x+0(FP), AX  // 将第一个参数 x 放入 AX
+    MOVQ y+8(FP), BX  // 将第二个参数 y 放入 BX
+    ADDQ BX, AX       // 将 BX 加到 AX
+    MOVQ AX, ret+16(FP)  // 将结果从 AX 移到返回值位置
+    RET               // 返回
+//main.go
+package main
+
+import "fmt"
+
+func main() {
+	x := 10
+	y := 20
+	sum := Sum(x, y)
+	fmt.Println("Sum:", sum)
+}
+
+//go:noescape
+func Sum(x, y int) int
+
+
+
+```
+
+```
+//add.s:
+TEXT ·Sum(SB), $0-8
+    MOVQ x11111111111+0(FP), AX  // 将第一个参数 x 放入 AX //注意这里面xy的变量名,随便写.无所谓程序运行.
+    MOVQ y222222222222+8(FP), BX  // 将第二个参数 y 放入 BX
+    ADDQ BX, AX       // 将 BX 加到 AX
+    MOVQ AX, ret+16(FP)  // 将结果从 AX 移到返回值位置
+    RET               // 返回
+//main.go
+package main
+
+import "fmt"
+
+func main() {
+	x := 10
+	y := 20
+	sum := Sum(x, y)
+	fmt.Println("Sum:", sum)
+}
+
+//go:noescape
+func Sum(x, y int) int
+
+```
+
+
+内存结构图:
+<img src='huibian1.png'>
+通过图很容易看出来ret的地址就是+16(fp)
+
+
+
+
+
+
+
+
 
 数据：
 所有的外部引用都需通过伪寄存器: PC（virtual Program Counter）/SB（Static Base register）。
@@ -129,8 +207,8 @@ TEXT runtime·profileloop(SB),NOSPLIT,$8
 	CALL	runtime·externalthreadhandler(SB)
 	RET
 
-# runtime·profileloop 函数名字 栈大小是8, 返回不写.
-# 把profileloop1函数放到cx里面, 再cx放到sp里面.这样栈里面就放入函数了.之后我们call就表示调用栈里面这个函数.最后ret即可. 这个代码就是调用其他函数.
+ runtime·profileloop 函数名字 栈大小是8, 返回不写.
+ 把profileloop1函数放到cx里面, 再cx放到sp里面.这样栈里面就放入函数了.之后我们call就表示调用栈里面这个函数.最后ret即可. 这个代码就是调用其他函数.
 
 
 
@@ -245,7 +323,7 @@ MOV[BX],AX的二进制编码为:1000100010000000
 ```
 
 
-#下面我们再重头分析这个代码.
+下面我们再重头分析这个代码.
 源码中的位置是src\runtime\internal\atomic\atomic_386.s
 //这个后面是386.s所以是运行在32位系统的.
 ```
@@ -670,7 +748,7 @@ misc\cgo\gmp\pi.go  使用gmp.go里面的大整数
 
 misc里面其他的都是一些其他平台的支持工具.
 
-
+## 下面开始源码部分.
 
 src里面从依赖最少得开始看:
 	从unicode文件夹开始.文件大体分析会写这里,代码细节我会直接加到相关代码里面的注释.
@@ -726,6 +804,55 @@ src里面从依赖最少得开始看:
 	 字符串的转化
 	 # src\strconv\atob.go  ascii到bool的转化
 	 # src\strconv\atoc.go  ascii到复数
+	 # src\strconv\decimal.go 小数的实现.不建议深入研究,因为这个对于float十进制的不是精确的.实用性不高.
+	 # src\strconv\ftoa.go 浮点数到字符串
+	 # src\strconv\atof.go 字符串到float
+	 # src\strconv\atoi.go 字符串到int
+	 # src\strconv\bytealg.go  字符串index函数.
+			src\strconv\bytealg.go:13行 引用的是 src\internal\bytealg\indexbyte_native.go:13行
+			根据cpu架构我们找到这里面的IndexByteString 和 IndexByte 函数实际上实现是
+			src\internal\bytealg\indexbyte_arm64.s 里面的
+			TEXT ·IndexByte(SB),NOSPLIT,$0-40函数和TEXT ·IndexByteString(SB),NOSPLIT,$0-32函数.
+			具体代码分析见src\internal\bytealg\indexbyte_arm64.s的注释.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# plan9基本知识:
+	https://cloud.tencent.com/developer/article/2416368
+
+	go汇编中出现unexpected EOF asm: assembly of pkg\test.s failed的解决办法
+	这个bug的解决办法就是在go汇编代码最后换一行就行了
+
+
+
+
+
+
+
+
+
+
+
+
 
 # math
 		里面有大量的汇编.文件结构是函数名_平台.s.里面很多函数都涉及数学上的算法.

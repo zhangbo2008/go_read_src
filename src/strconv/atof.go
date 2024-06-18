@@ -17,7 +17,7 @@ var optimize = true // set to false to force slow-path conversions for testing
 // commonPrefixLenIgnoreCase returns the length of the common
 // prefix of s and prefix, with the character case of s ignored.
 // The prefix argument must be all lower-case.
-func commonPrefixLenIgnoreCase(s, prefix string) int {
+func commonPrefixLenIgnoreCase(s, prefix string) int { // prefix必须全小写. 然后函数返回s和prefix的公共前缀的长度. (忽略s的大小写)
 	n := len(prefix)
 	if n > len(s) {
 		n = len(s)
@@ -38,7 +38,7 @@ func commonPrefixLenIgnoreCase(s, prefix string) int {
 // possibly signed floating-point representations inf, infinity,
 // and NaN. The result is ok if a prefix of s contains one
 // of these representations and n is the length of that prefix.
-// The character case is ignored.
+// The character case is ignored.   //返回s作为转化为特殊的float的值. 特殊值是inf, infinity, Nan这些特殊值.
 func special(s string) (f float64, n int, ok bool) {
 	if len(s) == 0 {
 		return 0, 0, false
@@ -71,7 +71,7 @@ func special(s string) (f float64, n int, ok bool) {
 	return 0, 0, false
 }
 
-func (b *decimal) set(s string) (ok bool) {
+func (b *decimal) set(s string) (ok bool) { // 输入s, 把他解析后, 放到b里面
 	i := 0
 	b.neg = false
 	b.trunc = false
@@ -171,8 +171,8 @@ func (b *decimal) set(s string) (ok bool) {
 // readFloat reads a decimal or hexadecimal mantissa and exponent from a float
 // string representation in s; the number may be followed by other characters.
 // readFloat reports the number of bytes consumed (i), and whether the number
-// is valid (ok).
-func readFloat(s string) (mantissa uint64, exp int, neg, trunc, hex bool, i int, ok bool) {
+// is valid (ok).      指数(exponent)和尾数(mantissa)
+func readFloat(s string) (mantissa uint64, exp int, neg, trunc, hex bool, i int, ok bool) { // 读取s, 解析里面的float为exp和尾数.
 	underscores := false
 
 	// optional sign
