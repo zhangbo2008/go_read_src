@@ -45,7 +45,7 @@ func Exp(x float64) float64 {
 //               x = k*ln2 + r,  |r| <= 0.5*ln2.
 //
 //      Here r will be represented as r = hi-lo for better
-//      accuracy.  把x拆成ln2的整数倍,加一个余数. 余数小于等于0.5*ln2
+//      accuracy.  把x拆成ln2的整数倍,加一个余数. 余数小于等于0.5*ln2, 换句话说k是x/ln2的四舍五入的值.
 //
 //   2. Approximation of exp(r) by a special rational function on
 //      the interval [0,0.34658]:  有理多项式函数的近似.
@@ -121,15 +121,15 @@ func exp(x float64) float64 {
 		return 1 + x
 	}
 
-	// reduce; computed as r = hi - lo for extra precision.
+	// reduce; computed as r = hi - lo for extra precision.  //第一步计算r 得到hi, lo, k
 	var k int
 	switch {
 	case x < 0:
-		k = int(Log2e*x - 0.5)
+		k = int(Log2e*x - 0.5) // log2e=1/ln2  , 一个数-0.5再int就是这个数的四舍五入了.
 	case x > 0:
-		k = int(Log2e*x + 0.5)
+		k = int(Log2e*x + 0.5) // 对于负数,  一个数+0.5再int就是这个数的四舍五入了.
 	}
-	hi := x - float64(k)*Ln2Hi
+	hi := x - float64(k)*Ln2Hi //ln2 拆成 ln2Hi+ln2Lo计算更准确.跟浮点数乘法有关.
 	lo := float64(k) * Ln2Lo
 
 	// compute
@@ -185,7 +185,7 @@ func exp2(x float64) float64 {
 }
 
 // exp1 returns e**r × 2**k where r = hi - lo and |r| ≤ ln(2)/2.
-func expmulti(hi, lo float64, k int) float64 {
+func expmulti(hi, lo float64, k int) float64 { //套公式就行了.
 	const (
 		P1 = 1.66666666666666657415e-01  /* 0x3FC55555; 0x55555555 */
 		P2 = -2.77777777770155933842e-03 /* 0xBF66C16C; 0x16BEBD93 */

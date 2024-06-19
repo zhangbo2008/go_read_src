@@ -278,26 +278,6 @@ A good general rule of thumb is to define all non-RODATA symbols in Go instead o
   callee-save 可以长时间的数据
   caller-save 临时数据.
 
-兼容:
-  386运行64位 元load函数.
-```
-// uint64 atomicload64(uint64 volatile* addr);
-// so actually
-// void atomicload64(uint64 *res, uint64 volatile *addr);
-TEXT runtime·atomicload64(SB), NOSPLIT, $0-12   #表示禁止栈分裂，这对于避免在函数调用期间进行栈增长很有用，常常用于非常短的函数。 表示函数的帧大小为0，参数和结果的总大小为12字节（在32位系统上，指针和整数通常为4字节） `TEXT` 指令用于声明函数的开始。在这里，它定义了一个名为 `runtime·atomicload64` 的函数。
-	MOVL	ptr+0(FP), AX   // FP是栈指针,也就是第一个参数.  testL:将两个操作数进行按位AND,设结果TEMP SF = 将结果的最高位赋给SF标志位，例如结果最高位是1，SF就是1看TEMP是不是0如果TEMP是0，ZF位置1如果TEMP不是0，ZF位置0
-	TESTL	$7, AX  //如果结果是0, 那么ZF=1   ZF标志位用于记录上一条指令运算结果是否为零。  叫zero flag, 
-	JZ	2(PC)  //  jz=jump if zero，即零标志为1就跳转.跳到pc里面地址为2的地方. 应该是213的地方. #综合看就是最低的3个位如果都是0,那么结果是0,就进行跳转, 跳到213行. 否则就运行212行.
-	MOVL	0, AX // crash with nil ptr deref   //此指令试图从地址0读取值并移动到 `AX` 寄存器， 这会导致一个空指针引用的崩溃。这是一个有意为之的控制流路径，旨在通过 崩溃揭示程序中的错误。
-	LEAL	ret_lo+4(FP), BX      //movl  mov long ： 字长传送 ： 32位   movw   mov word：字传送 ：16位   movb   mov byte：字节传送 ：8位  记忆这个int始终是4字节 long这个如果是linux 他就跟系统一样长字节,也就是64/8   LEA指令的功能是取偏移地址
-
-	// MOVQ (%EAX), %MM0  // MMX和SSE都是INTEL开发的基于SIMD(单指令多数据流)的技术。所谓单指令多数据流是指可以用一条指令可以完成多个数据的操作 用mm可以实现atomic效果. 虽然64位系统已经推出，但是我们大部分都是使用32位系统，所以如果要完成两个128位的相加运算，用普通32位指令很明显要执行4条相加指令，而基于64位的MMX指令只需要执行两次即可完成，更强大的SSE能一次处理128位，故一次就可以完成操作，所以采用MMX及SSE优化能够大幅度提升程序性能。 MOVQ是4*8.  eax是32位,我们这个代码在32跑所以mm0也是32位.
-	BYTE $0x0f; BYTE $0x6f; BYTE $0x00  //这是机器码.很难转化.可能用机器码的原因是省去movq的时间,这样更快.因为这个函数太底层,所以都用机器码来写速度最快.
-	// MOVQ %MM0, 0(%EBX)
-	BYTE $0x0f; BYTE $0x7f; BYTE $0x03
-	// EMMS
-	BYTE $0x0F; BYTE $0x77
-	RET
 
 
 BYTE语法:
@@ -912,7 +892,7 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 		  exp函数,底层也是用多项式来近似.
 			对于我们amd64平台底层实现是用汇编来加速:(先读懂exp.go的代码,然后再读相关的汇编代码,算法思路都是一样的只是实现的语言不同,并且exp.go里面注释给了算法说明.汇编代码里面没有算法说明.)
 			src\math\exp_amd64.s
-			使用taylor展开式来近似计算.
+			使用taylor展开式来近似计算.这个文件的go接口原型在src\math\exp_asm.go
 
 
 		# src\math\fma.go

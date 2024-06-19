@@ -21,7 +21,7 @@
 #define LOG2E 1.4426950408889634073599246810018920 // 1/LN2
 #define LN2U 0.69314718055966295651160180568695068359375 // upper half LN2
 #define LN2L 0.28235290563031577122588448175013436025525412068e-12 // lower half LN2
-#define PosInf 0x7FF0000000000000
+#define PosInf 0x7FF0000000000000  //这是一个64位的值=8bytes
 #define NegInf 0xFFF0000000000000
 #define Overflow 7.09782712893384e+02
 
@@ -34,23 +34,23 @@ DATA exprodata<>+40(SB)/8, $8.3333333333333333333e-3
 DATA exprodata<>+48(SB)/8, $1.3888888888888888889e-3
 DATA exprodata<>+56(SB)/8, $1.9841269841269841270e-4
 DATA exprodata<>+64(SB)/8, $2.4801587301587301587e-5
-GLOBL exprodata<>+0(SB), RODATA, $72
+GLOBL exprodata<>+0(SB), RODATA, $72       //最后72是长度, 可以看到上面一共有9个8
 
 // func Exp(x float64) float64
 TEXT ·archExp(SB),NOSPLIT,$0
 	// test bits for not-finite
-	MOVQ    x+0(FP), BX
+	MOVQ    x+0(FP), BX   //movb（8位）字节、movw（16位）字、movl（32位）双字、movq（64位）四字 经常用到,要记住. 因为我们这个函数接口原型在src\math\exp_asm.go :  func archExp(x float64) float64  输入64位float, 输出64位float. 所以掉archExp, 数据存到BX里面.
 	MOVQ    $~(1<<63), AX // sign bit mask
 	MOVQ    BX, DX
-	ANDQ    AX, DX
+	ANDQ    AX, DX          //DX得到x的绝对值
 	MOVQ    $PosInf, AX
 	CMPQ    AX, DX
-	JLE     notFinite
+	JLE     notFinite      // jump less equal 如果上面结果是小于等于,那么我们就跳转到 notFinite标致.
 	// check if argument will overflow
 	MOVQ    BX, X0
-	MOVSD   $Overflow, X1
-	COMISD  X1, X0
-	JA      overflow
+	MOVSD   $Overflow, X1   //传送string数据的双字节.因为浮点数是用一个4字节来保存的.
+	COMISD  X1, X0         // comisd指令: Compares the double precision floating-point values in the low quadwords of operand 1 (first operand) and operand 2 (second operand), and sets the ZF, PF, and CF flags in the EFLAGS register according to the result (unordered, greater than, less than, or equal). The OF, SF, and AF flags in the EFLAGS register are set to 0. The unordered result is returned if either source operand is a NaN (QNaN or SNaN).
+	JA      overflow       //JA   ;无符号大于则跳转
 	MOVSD   $LOG2E, X1
 	MULSD   X0, X1
 	CVTSD2SL X1, BX // BX = exponent
@@ -108,18 +108,18 @@ lastStep:
 	MOVSD   X0, ret+8(FP)
 	RET
 notFinite:
-	// test bits for -Inf
-	MOVQ    $NegInf, AX
+	// test bits for -Inf   再判断他是不是负无穷.
+	MOVQ    $NegInf, AX    //$表示取变量的值.  
 	CMPQ    AX, BX
-	JNE     notNegInf
+	JNE     notNegInf         //跳到非负无穷
 	// -Inf, return 0
 underflow: // return 0
 	MOVQ    $0, ret+8(FP)
 	RET
 overflow: // return +Inf
-	MOVQ    $PosInf, BX
+	MOVQ    $PosInf, BX   //这行运行完就运行121行.这种设置也就是导致这种flag跳转很容易bug, 跟c语言goto一样.
 notNegInf: // NaN or +Inf, return x
-	MOVQ    BX, ret+8(FP)
+	MOVQ    BX, ret+8(FP)  //这个偏移量,可以看汇编的内存图.   从上往下的地址是 返回值, 入参, 局部变量. 之所以这么排列是因为函数最后返回时候, 要栈pop,要pop到返回值的地址,所以返回值一定在最上面, 才保证把下面已经无用的信息都pop干净了. 之后压入的是入参,  因为入参是父函数给的,所以要提前压入, 局部变量是子函数启动时候才有的,所以最后进入.这里面偏移量是8, 是因为我们函数压入的是float64. 所以是8bytes的. 这样下行ret就把bx里面的值返回了.
 	RET
 denormal:
 	CMPL    BX, $-52
