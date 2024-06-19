@@ -31,7 +31,7 @@ func modf(f float64) (int float64, frac float64) {
 	}
 
 	x := Float64bits(f)
-	e := uint(x>>shift)&mask - bias
+	e := uint(x>>shift)&mask - bias //shift是IEEE754的float 尾数码. 这个操作算完, 得到真正的f的e的大小. 也就是10的多少次幂.
 
 	// Keep the top 12+e bits, the integer part; clear the rest.
 	if e < 64-12 {

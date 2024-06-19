@@ -98,11 +98,11 @@ func pow(x, y float64) float64 {
 		return 1 / Sqrt(x)
 	}
 
-	yi, yf := Modf(Abs(y))
+	yi, yf := Modf(Abs(y)) //拆成整数次幂,和分数次幂.
 	if yf != 0 && x < 0 {
 		return NaN()
 	}
-	if yi >= 1<<63 {
+	if yi >= 1<<63 { // y太大就返回无穷.
 		// yi is a large even int that will lead to overflow (or underflow to 0)
 		// for all x except -1 (x == 1 was handled earlier)
 		switch {
@@ -120,7 +120,7 @@ func pow(x, y float64) float64 {
 	ae := 0
 
 	// ans *= x**yf
-	if yf != 0 {
+	if yf != 0 { // 换底公式即可.
 		if yf > 0.5 {
 			yf--
 			yi++

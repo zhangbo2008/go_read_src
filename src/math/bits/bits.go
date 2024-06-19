@@ -14,7 +14,7 @@
 // architecture and the Go release.
 package bits
 
-const uintSize = 32 << (^uint(0) >> 63) // 32 or 64
+const uintSize = 32 << (^uint(0) >> 63) // 32 or 64. 64位系统这个是64
 
 // UintSize is the size of a uint in bits.
 const UintSize = uintSize
@@ -56,7 +56,7 @@ var deBruijn64tab = [64]byte{
 }
 
 // TrailingZeros returns the number of trailing zero bits in x; the result is [UintSize] for x == 0.
-func TrailingZeros(x uint) int {
+func TrailingZeros(x uint) int { //TrailingZeros32 返回 x 中尾随零位的数量；对于 x == 0，结果为 32。
 	if UintSize == 32 {
 		return TrailingZeros32(uint32(x))
 	}
@@ -308,7 +308,7 @@ func Len(x uint) int {
 
 // Len8 returns the minimum number of bits required to represent x; the result is 0 for x == 0.
 func Len8(x uint8) int {
-	return int(len8tab[x])
+	return int(len8tab[x]) // len8tab 是一个16*16个字符的字符串. x是索引, len8tab[x]是十进制数字x对应的bit长度.
 }
 
 // Len16 returns the minimum number of bits required to represent x; the result is 0 for x == 0.
@@ -317,7 +317,7 @@ func Len16(x uint16) (n int) {
 		x >>= 8
 		n = 8
 	}
-	return n + int(len8tab[x])
+	return n + int(len8tab[x]) // len8tab 是一个16*16个字符的字符串. x是索引, len8tab[x]是十进制数字x对应的bit长度.
 }
 
 // Len32 returns the minimum number of bits required to represent x; the result is 0 for x == 0.

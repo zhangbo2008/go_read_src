@@ -854,6 +854,10 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 
 
 # math
+		浮点数基本资料:https://blog.csdn.net/weixin_47713503/article/details/108699001
+		这里面我们需要记住几个关键数值:在下面一些代码中有用到.
+			长浮点数的各个位: 符号位1, 阶码11, 尾数码52, 总位数64, 偏置值3FFH, 十进制偏置值1023
+
 		里面有大量的汇编.文件结构是函数名_平台.s.里面很多函数都涉及数学上的算法.
 		我们只需要看amd64或者x86的即可.这俩是pc平台.如果不写平台的就是跨平台的,是必看的.
 
@@ -902,3 +906,29 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 		# src\math\log.go
 			83行看到,如果平台支持,那么就使用汇编来计算log
 			根据我们的平台,底层实现是src\math\log_amd64.s
+
+		# src\math\modf.go
+			mod拆分一个浮点数为一个整数跟一个分数的和.
+		# src\math\nextafter.go
+		  返回x到y这个方向的float数的下一个.
+		# src\math\pow.go
+		  算x的y次幂.使用数学上的换底公式,换成exp和log函数来算.
+		# src\math\remainder.go
+			x REM y  =  x - [x/y]*y  
+		下面是一些二级库包
+		# src\math\bits\bits.go
+			一些bytes的操作. 加减乘除mod,多少位是1,多少位是0等.
+		# src\math\cmplx
+			都是一些复数计算, 很少用到.
+
+
+
+
+
+
+
+
+
+
+
+

@@ -23,12 +23,12 @@
 #define LN2L 0.28235290563031577122588448175013436025525412068e-12 // lower half LN2
 #define PosInf 0x7FF0000000000000  //这是一个64位的值=8bytes
 #define NegInf 0xFFF0000000000000
-#define Overflow 7.09782712893384e+02
+#define Overflow 7.09782712893384e+02   //e的709次幂过大,无法计算.
 
 DATA exprodata<>+0(SB)/8, $0.5           //DATA命令用于往SB里面放全局变量. $后面加数字表示立即数, 加变量表示他的地址.
 DATA exprodata<>+8(SB)/8, $1.0
 DATA exprodata<>+16(SB)/8, $2.0
-DATA exprodata<>+24(SB)/8, $1.6666666666666666667e-1
+DATA exprodata<>+24(SB)/8, $1.6666666666666666667e-1  //这里面float都是用8字节来存.
 DATA exprodata<>+32(SB)/8, $4.1666666666666666667e-2
 DATA exprodata<>+40(SB)/8, $8.3333333333333333333e-3
 DATA exprodata<>+48(SB)/8, $1.3888888888888888889e-3
@@ -48,18 +48,18 @@ TEXT ·archExp(SB),NOSPLIT,$0
 	JLE     notFinite      // jump less equal 如果上面结果是小于等于,那么我们就跳转到 notFinite标致.
 	// check if argument will overflow
 	MOVQ    BX, X0
-	MOVSD   $Overflow, X1   //传送string数据的双字节.因为浮点数是用一个4字节来保存的.
-	COMISD  X1, X0         // comisd指令: Compares the double precision floating-point values in the low quadwords of operand 1 (first operand) and operand 2 (second operand), and sets the ZF, PF, and CF flags in the EFLAGS register according to the result (unordered, greater than, less than, or equal). The OF, SF, and AF flags in the EFLAGS register are set to 0. The unordered result is returned if either source operand is a NaN (QNaN or SNaN).
+	MOVSD   $Overflow, X1   //传送string数据的双字节.但是根据这个代码看出来movsd是传输8字节.
+	COMISD  X1, X0         // comisd指令: Compares the double precision floating-point values in the low quadwords of operand 1 (first operand) and operand 2 (second operand), and sets the ZF, PF, and CF flags in the EFLAGS register according to the result (unordered, greater than, less than, or equal). The OF, SF, and AF flags in the EFLAGS register are set to 0. The unordered result is returned if either source operand is a NaN (QNaN or SNaN). 比较2个8字节的float数. 这个运算符是反过来算, 比较X0跟X1的关系. 不是cmp里面的比较顺序.
 	JA      overflow       //JA   ;无符号大于则跳转
-	MOVSD   $LOG2E, X1
-	MULSD   X0, X1
-	CVTSD2SL X1, BX // BX = exponent
+	MOVSD   $LOG2E, X1         //x1=1/ln2
+	MULSD   X0, X1                  // x1=x/ln2
+	CVTSD2SL X1, BX // BX = exponent    
 	CVTSL2SD BX, X1
-	CMPB ·useFMA(SB), $1
+	CMPB ·useFMA(SB), $1          //是否用fma来运算
 	JE   avxfma
 	MOVSD   $LN2U, X2
-	MULSD   X1, X2
-	SUBSD   X2, X0
+	MULSD   X1, X2              //x1是代码exp.go里面的k了.  BX也是k
+	SUBSD   X2, X0              //exp.go:132 //结果存入X2
 	MOVSD   $LN2L, X2
 	MULSD   X1, X2
 	SUBSD   X2, X0
@@ -97,8 +97,8 @@ TEXT ·archExp(SB),NOSPLIT,$0
 	ADDSD exprodata<>+8(SB), X0
 	// return fr * 2**exponent
 ldexp:
-	ADDL    $0x3FF, BX // add bias
-	JLE     denormal
+	ADDL    $0x3FF, BX // add bias   $0x3ff是源, BX是目标. 所以BX+0x3ff
+	JLE     denormal  //The JLE (Jump if Less Than or Equal) instruction checks if the result of the addition is less than or equal to zero.
 	CMPL    BX, $0x7FF
 	JGE     overflow
 lastStep:
