@@ -63,10 +63,10 @@ const debugFloat = false // enable for debugging
 // a new value using the [Float.Set] method; shallow copies
 // of Floats are not supported and may lead to errors.
 type Float struct {
-	prec uint32
-	mode RoundingMode
-	acc  Accuracy
-	form form
+	prec uint32       //尾数的最大bit数
+	mode RoundingMode //近似的方法
+	acc  Accuracy     //近似跟精确值之间的误差
+	form form         //是否有限,还是无限.
 	neg  bool
 	mant nat
 	exp  int32

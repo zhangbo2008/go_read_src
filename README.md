@@ -15,21 +15,27 @@ How to Use the Plan 9 C Compiler
 
 
 
+# plan9基本知识:
+	https://cloud.tencent.com/developer/article/2416368
+
+	go汇编中出现unexpected EOF asm: assembly of pkg\test.s failed的解决办法
+	这个bug的解决办法就是在go汇编代码最后换一行就行了
+
+
+	https://blog.csdn.net/qq_17818281/article/details/114891093
+
+
+
+	一套另外的中文教程: 非常好.
+	https://golang.design/under-the-hood/zh-cn/part1basic/ch01basic/asm/
 
 
 
 
-一套另外的中文教程: 非常好.
-https://golang.design/under-the-hood/zh-cn/part1basic/ch01basic/asm/
+	一份很详细的博客:
+	https://blog.csdn.net/zhu0902150102/article/details/129539307
 
-
-
-
-一份很详细的博客:
-https://blog.csdn.net/zhu0902150102/article/details/129539307
-
-
-
+  plan9的汇编没什么好的方法来调试.
 
 
 
@@ -834,14 +840,7 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 
 
 
-# plan9基本知识:
-	https://cloud.tencent.com/developer/article/2416368
 
-	go汇编中出现unexpected EOF asm: assembly of pkg\test.s failed的解决办法
-	这个bug的解决办法就是在go汇编代码最后换一行就行了
-
-
-	https://blog.csdn.net/qq_17818281/article/details/114891093
 
 
 
@@ -920,6 +919,62 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 			一些bytes的操作. 加减乘除mod,多少位是1,多少位是0等.
 		# src\math\cmplx
 			都是一些复数计算, 很少用到.
+		# src\math\big\arith.go
+			// 1）Little-endian：将低序字节存储在起始地址（低位编址）
+			// 2）Big-endian：将高序字节存储在起始地址（高位编址）
+			// 记忆: 关注地址的开始地址存什么, 开始存高bit, 就叫大字节序. endian:是end单词加一个后缀表示字节的顺序. 高bit,表示的是大的数. 比如bin(11)里面第一个1表示2, 第二个1表示1.所以就记住了.地址上来就记录大的数就是大endian, 地址上来记录小的数就是小endian.
+			// 如果我们将0x1234abcd写入到以0x0000开始的内存中，则结果为；
+			// address	big-endian	little-endian
+			// 0x0000		0x12				0xcd
+			// 0x0001		0x34				0xab
+			// 0x0002		0xab				0x34
+			// 0x0003		0xcd				0x12
+
+
+		# src\math\big\nat.go  src\math\big\natconv.go   src\math\big\natdiv.go
+			natural numbers 的方法和定义.他是大整数, 大有理数, 大浮点数的底层.
+		# src\math\big\int.go 大整数
+		# src\math\big\float.go 浮点数 表示为:sign × mantissa × 2**exponent
+		# src\math\big\rat.go 分数
+		# src\math\big\sqrt.go 算根号. 牛顿法.
+			使用sync.Once来保证全局变量的初始化唯一一次.节省内存资源.
+		下面的rand库包都是计算分布函数里面的抽样.
+
+		# src\math\rand\rng.go
+			是均匀分布的实现.
+			理解一下里面的计算流程,至于为什么算法这么设计是对的,需要看相关论文.
+		# src\math\rand\rand.go
+			伪随机数.
+		# src\math\rand\exp.go
+			这个是计算指数分布里面的抽样.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

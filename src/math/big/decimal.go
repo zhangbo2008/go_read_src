@@ -52,7 +52,7 @@ const maxShift = _W - 4
 
 // Init initializes x to the decimal representation of m << shift (for
 // shift >= 0), or m >> -shift (for shift < 0).
-func (x *decimal) init(m nat, shift int) {
+func (x *decimal) init(m nat, shift int) { // 计算m<<shift
 	// special case 0
 	if len(m) == 0 {
 		x.mant = x.mant[:0]

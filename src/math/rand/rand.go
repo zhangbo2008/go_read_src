@@ -29,7 +29,7 @@ import (
 //
 // A Source is not safe for concurrent use by multiple goroutines.
 type Source interface {
-	Int63() int64
+	Int63() int64 //一个叫Int63函数, 输入空,输出是int64类型, 范围是0到1<<63
 	Seed(seed int64)
 }
 
@@ -58,7 +58,7 @@ func newSource(seed int64) *rngSource {
 	return &rng
 }
 
-// A Rand is a source of random numbers.
+// A Rand is a source of random numbers. //Rand是一个随机数生成器.
 type Rand struct {
 	src Source
 	s64 Source64 // non-nil if src is source64
@@ -117,19 +117,19 @@ func (r *Rand) Int() int {
 
 // Int63n returns, as an int64, a non-negative pseudo-random number in the half-open interval [0,n).
 // It panics if n <= 0.
-func (r *Rand) Int63n(n int64) int64 {
+func (r *Rand) Int63n(n int64) int64 { //返回一个 0到n的
 	if n <= 0 {
 		panic("invalid argument to Int63n")
 	}
 	if n&(n-1) == 0 { // n is power of two, can mask
 		return r.Int63() & (n - 1)
 	}
-	max := int64((1 << 63) - 1 - (1<<63)%uint64(n))
+	max := int64((1 << 63) - 1 - (1<<63)%uint64(n)) // n的整数倍-1
 	v := r.Int63()
 	for v > max {
 		v = r.Int63()
-	}
-	return v % n
+	} //一直随机到一个数是在<max的,也就是在整数倍范围内.
+	return v % n //他的mod是 [0,n)的均匀分布, 所以返回mod即可.
 }
 
 // Int31n returns, as an int32, a non-negative pseudo-random number in the half-open interval [0,n).
@@ -141,7 +141,7 @@ func (r *Rand) Int31n(n int32) int32 {
 	if n&(n-1) == 0 { // n is power of two, can mask
 		return r.Int31() & (n - 1)
 	}
-	max := int32((1 << 31) - 1 - (1<<31)%uint32(n))
+	max := int32((1 << 31) - 1 - (1<<31)%uint32(n)) //跟上面的函数同理
 	v := r.Int31()
 	for v > max {
 		v = r.Int31()
@@ -149,6 +149,7 @@ func (r *Rand) Int31n(n int32) int32 {
 	return v % n
 }
 
+// int31n也就是下面这个函数, 跟上面Int31n效果是一样的. 但是效率更高.算法不一样. 这个算法非常精彩,效率也更高.//效果是返回一个数0到n之间, 均匀采样.
 // int31n returns, as an int32, a non-negative pseudo-random number in the half-open interval [0,n).
 // n must be > 0, but int31n does not check this; the caller must ensure it.
 // int31n exists because Int31n is inefficient, but Go 1 compatibility
@@ -159,12 +160,12 @@ func (r *Rand) Int31n(n int32) int32 {
 // https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction
 // https://lemire.me/blog/2016/06/30/fast-random-shuffling
 func (r *Rand) int31n(n int32) int32 {
-	v := r.Uint32()
-	prod := uint64(v) * uint64(n)
-	low := uint32(prod)
-	if low < uint32(n) {
-		thresh := uint32(-n) % uint32(n)
-		for low < thresh {
+	v := r.Uint32()               //v是通过伪随机算法得到的一个0到2^32次幂之间的一个随机数.
+	prod := uint64(v) * uint64(n) //得到prod是一个64位随机数.并且是n的倍数.显然因为v最大不超过2^32,所以prod的高32位:int32(prod >> 32)必小于n.
+	low := uint32(prod)           //low是prod的低32位
+	if low < uint32(n) {          //这个函数的算法核心重点:如果low大于等于n,那么我们prod的高32位可以看做1到 [prod/n]*n之间数的均匀采样得到的. 如果low小于n,那么就一定要让prod采样来自于一个n的倍数的区间.这就涉及下面thresh的计算.
+		thresh := uint32(-n) % uint32(n) // 这个阈值运算的计算思想如下. 涉及到补码的知识. 道理如下: 首先我们v是取的1到2^32之间的随机数. uint32(-n)加上n就得到2^32, thresh是uint32(-n)比n的倍数多出来的数. 所以整个区间1到2^32次幂,我们需要扣除thresh这么多个数, 剩下来的就是n的倍数了.这就符合我们上面一行注释要求的需要一个n的倍数的区间来保证均匀分布性.
+		for low < thresh {               //小于阈值就重新计算.直到保证抽样区间是n的倍数.
 			v = r.Uint32()
 			prod = uint64(v) * uint64(n)
 			low = uint32(prod)
@@ -279,12 +280,13 @@ func (r *Rand) Read(p []byte) (n int, err error) {
 	return read(p, r.src, &r.readVal, &r.readPos)
 }
 
+// 创造一个新的随机值, 写入p里面.
 func read(p []byte, src Source, readVal *int64, readPos *int8) (n int, err error) {
 	pos := *readPos
 	val := *readVal
 	rng, _ := src.(*rngSource)
 	for n = 0; n < len(p); n++ {
-		if pos == 0 {
+		if pos == 0 { //如果位置是0, 就创造新的val
 			if rng != nil {
 				val = rng.Int63()
 			} else {
@@ -292,8 +294,8 @@ func read(p []byte, src Source, readVal *int64, readPos *int8) (n int, err error
 			}
 			pos = 7
 		}
-		p[n] = byte(val)
-		val >>= 8
+		p[n] = byte(val) //随机出来的值写入p, byte一个int64,就是拿他的最后8位.
+		val >>= 8        //val去掉最后8位,再循环再写入.
 		pos--
 	}
 	*readPos = pos
@@ -495,7 +497,7 @@ func NormFloat64() float64 { return globalRand().NormFloat64() }
 //	sample = ExpFloat64() / desiredRateParameter
 func ExpFloat64() float64 { return globalRand().ExpFloat64() }
 
-type lockedSource struct {
+type lockedSource struct { //在rng.go里面的生成器rngSource上加一个锁//因为我们源码rng.go能看到每次生成随机数, 底层都会进行rng.feed, rng.tap的计数.所以并发时候会有冲突, 加上互斥锁才行.
 	lk sync.Mutex
 	s  *rngSource
 }

@@ -31,7 +31,7 @@ import (
 // During arithmetic operations, denormalized values may occur but are
 // always normalized before returning the final result. The normalized
 // representation of 0 is the empty or nil slice (length = 0).
-type nat []Word
+type nat []Word // little endian
 
 var (
 	natOne  = nat{1}
@@ -50,7 +50,7 @@ func (z nat) clear() {
 	}
 }
 
-func (z nat) norm() nat {
+func (z nat) norm() nat { //去掉最后等于0的部分.
 	i := len(z)
 	for i > 0 && z[i-1] == 0 {
 		i--
@@ -58,7 +58,7 @@ func (z nat) norm() nat {
 	return z[0:i]
 }
 
-func (z nat) make(n int) nat {
+func (z nat) make(n int) nat { //创建一个长度为n的nat: natral number
 	if n <= cap(z) {
 		return z[:n] // reuse z
 	}
@@ -86,7 +86,7 @@ func (z nat) setUint64(x uint64) nat {
 	if w := Word(x); uint64(w) == x {
 		return z.setWord(w)
 	}
-	// 2-word value
+	// 2-word value, 也就是word是uint32的.
 	z = z.make(2)
 	z[1] = Word(x >> 32)
 	z[0] = Word(x)
@@ -674,8 +674,8 @@ func (x nat) bitLen() int {
 }
 
 // trailingZeroBits returns the number of consecutive least significant zero
-// bits of x.
-func (x nat) trailingZeroBits() uint {
+// bits of x. // 计算x的末尾有多少个连续的0.
+func (x nat) trailingZeroBits() uint { // 注意nat也是小endian序
 	if len(x) == 0 {
 		return 0
 	}

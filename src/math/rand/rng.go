@@ -177,8 +177,8 @@ var (
 	}
 )
 
-type rngSource struct {
-	tap  int           // index into vec
+type rngSource struct { //这个是上面接口的实现.
+	tap  int           // index into vec       //这两个变量用来维护索引.
 	feed int           // index into vec
 	vec  [rngLen]int64 // current feedback register
 }
@@ -201,7 +201,7 @@ func seedrand(x int32) int32 {
 }
 
 // Seed uses the provided seed value to initialize the generator to a deterministic state.
-func (rng *rngSource) Seed(seed int64) {
+func (rng *rngSource) Seed(seed int64) { // 输入一个seed, 然后把他给生成器rng.
 	rng.tap = 0
 	rng.feed = rngLen - rngTap
 
@@ -215,16 +215,16 @@ func (rng *rngSource) Seed(seed int64) {
 
 	x := int32(seed)
 	for i := -20; i < rngLen; i++ {
-		x = seedrand(x)
-		if i >= 0 {
+		x = seedrand(x) //对x反复做这个变换函数.
+		if i >= 0 {     // 一直到20次以上.我们得到的足够随机了.
 			var u int64
 			u = int64(x) << 40
 			x = seedrand(x)
 			u ^= int64(x) << 20
 			x = seedrand(x)
 			u ^= int64(x)
-			u ^= rngCooked[i]
-			rng.vec[i] = u
+			u ^= rngCooked[i] //跟表里面再异或.
+			rng.vec[i] = u    //写入,然后大于0一直写入. 一直写满到rngLen长度.
 		}
 	}
 }
@@ -235,7 +235,7 @@ func (rng *rngSource) Int63() int64 {
 }
 
 // Uint64 returns a non-negative pseudo-random 64-bit integer as a uint64.
-func (rng *rngSource) Uint64() uint64 {
+func (rng *rngSource) Uint64() uint64 { //这个函数通过rng.vec来得到一个随机数.
 	rng.tap--
 	if rng.tap < 0 {
 		rng.tap += rngLen
@@ -247,6 +247,6 @@ func (rng *rngSource) Uint64() uint64 {
 	}
 
 	x := rng.vec[rng.feed] + rng.vec[rng.tap]
-	rng.vec[rng.feed] = x
+	rng.vec[rng.feed] = x //取到的x,写入下次的feed里面.
 	return uint64(x)
 }

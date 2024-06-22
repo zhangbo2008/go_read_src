@@ -13,7 +13,7 @@ package big
 import "math/bits"
 
 // A Word represents a single digit of a multi-precision unsigned integer.
-type Word uint
+type Word uint //一个64位无符号整数, 给这个起名Word, 赋予新的方法. 因为旧的算法不适合大数.精度也不够.
 
 const (
 	_S = _W / 8 // word size in bytes
@@ -41,8 +41,8 @@ const (
 // These operations are used by the vector operations below.
 
 // z1<<_W + z0 = x*y
-func mulWW(x, y Word) (z1, z0 Word) {
-	hi, lo := bits.Mul(uint(x), uint(y))
+func mulWW(x, y Word) (z1, z0 Word) { // 两个Word相乘.
+	hi, lo := bits.Mul(uint(x), uint(y)) // 两个64位数的乘法, 结果是一个128位的, 所以我们用两个64位来表示, 一个表示高64位, 一个表示低64位.
 	return Word(hi), Word(lo)
 }
 
@@ -56,15 +56,23 @@ func mulAddWWW_g(x, y, c Word) (z1, z0 Word) {
 
 // nlz returns the number of leading zeros in x.
 // Wraps bits.LeadingZeros call for convenience.
-func nlz(x Word) uint {
+func nlz(x Word) uint { // x bit表示里面前面有多少个0
 	return uint(bits.LeadingZeros(uint(x)))
 }
 
-// The resulting carry c is either 0 or 1.
-func addVV_g(z, x, y []Word) (c Word) {
+// The resulting carry c is either 0 or 1.// 这个函数 z=z+x+y 如果进位了那么c就设置为1,否则设置为0.
+func addVV_g(z, x, y []Word) (c Word) { // V是vector的意思, 也就是 []Word,  使用的是小端表示.这点很重要, 使用小端表示能最大程度接近我们的普通四则运算法则!!!!!!!
+	//例如:
+	// 如果我们将0x1234abcd写入到以0x0000开始的内存中，则结果为；
+	// address	big-endian	little-endian
+	// 0x0000		0x12				0xcd
+	// 0x0001		0x34				0xab
+	// 0x0002		0xab				0x34
+	// 0x0003		0xcd				0x12
+
 	// The comment near the top of this file discusses this for loop condition.
 	for i := 0; i < len(z) && i < len(x) && i < len(y); i++ {
-		zi, cc := bits.Add(uint(x[i]), uint(y[i]), uint(c))
+		zi, cc := bits.Add(uint(x[i]), uint(y[i]), uint(c)) //go里面输出值,都默认初始化为0,
 		z[i] = Word(zi)
 		c = Word(cc)
 	}
@@ -72,18 +80,18 @@ func addVV_g(z, x, y []Word) (c Word) {
 }
 
 // The resulting carry c is either 0 or 1.
-func subVV_g(z, x, y []Word) (c Word) {
+func subVV_g(z, x, y []Word) (c Word) { // 向量减法.  方法就是按位减, 从最高位开始减.
 	// The comment near the top of this file discusses this for loop condition.
 	for i := 0; i < len(z) && i < len(x) && i < len(y); i++ {
 		zi, cc := bits.Sub(uint(x[i]), uint(y[i]), uint(c))
 		z[i] = Word(zi)
-		c = Word(cc)
+		c = Word(cc) //是否之前借了一位. 借位了,那么借位就参与下轮运算.借位表示最高位再往上借了一个1.  比如 x是   0...0 32个0,  y是 1...1 32个1,  那么x-y结果就是把x借一位更高位, x=10...0 32个0, 用这个减去y. 所以结果是1, 借位是1.
 	}
 	return
 }
 
 // The resulting carry c is either 0 or 1.
-func addVW_g(z, x []Word, y Word) (c Word) {
+func addVW_g(z, x []Word, y Word) (c Word) { //
 	c = y
 	// The comment near the top of this file discusses this for loop condition.
 	for i := 0; i < len(z) && i < len(x); i++ {
@@ -100,12 +108,12 @@ func addVW_g(z, x []Word, y Word) (c Word) {
 // and if so, switch to a much faster copy instead.
 // This is only a good idea for large z,
 // because the overhead of the check and the function call
-// outweigh the benefits when z is small.
+// outweigh the benefits when z is small. //结果很大时候这个算法更快.
 func addVWlarge(z, x []Word, y Word) (c Word) {
 	c = y
 	// The comment near the top of this file discusses this for loop condition.
 	for i := 0; i < len(z) && i < len(x); i++ {
-		if c == 0 {
+		if c == 0 { //如果进位是0.那么我们直接copyx即可.
 			copy(z[i:], x[i:])
 			return
 		}
@@ -143,7 +151,7 @@ func subVWlarge(z, x []Word, y Word) (c Word) {
 	return
 }
 
-func shlVU_g(z, x []Word, s uint) (c Word) {
+func shlVU_g(z, x []Word, s uint) (c Word) { // shl左移, V是 []word, U是uint缩写._g表示实现使用go语言.
 	if s == 0 {
 		copy(z, x)
 		return
@@ -153,16 +161,16 @@ func shlVU_g(z, x []Word, s uint) (c Word) {
 	}
 	s &= _W - 1 // hint to the compiler that shifts by s don't need guard code
 	ŝ := _W - s
-	ŝ &= _W - 1 // ditto
-	c = x[len(z)-1] >> ŝ
-	for i := len(z) - 1; i > 0; i-- {
-		z[i] = x[i]<<s | x[i-1]>>ŝ
+	ŝ &= _W - 1                       // ditto   //s_hat是左移操作之后保留的位数
+	c = x[len(z)-1] >> ŝ              // x的最后一个往右便宜. 举例子: x是64位的数, 我们要左移10位,那么我们先把这个x右移54位, 就得到了进位的值.c// 所以真实shl结果是z+c
+	for i := len(z) - 1; i > 0; i-- { //因为我们使用的是小端表示,所以我们要从最大的索引开始.
+		z[i] = x[i]<<s | x[i-1]>>ŝ //这个最好举例子来理解: 比如我们数据uint4[],  表示起来是0x1234abcd,  那么我们小端表示是 0xabcd, 0x1234,  左移结果是0x234abcd0, 第一步我们需要 1234左移1,然后跟0xabcd右移3的做or运算即可.举例子是理解bit运算的好方法.
 	}
 	z[0] = x[0] << s
 	return
 }
 
-func shrVU_g(z, x []Word, s uint) (c Word) {
+func shrVU_g(z, x []Word, s uint) (c Word) { //类似
 	if s == 0 {
 		copy(z, x)
 		return
@@ -197,8 +205,8 @@ func mulAddVWW_g(z, x []Word, y, r Word) (c Word) {
 func addMulVVW_g(z, x []Word, y Word) (c Word) {
 	// The comment near the top of this file discusses this for loop condition.
 	for i := 0; i < len(z) && i < len(x); i++ {
-		z1, z0 := mulAddWWW_g(x[i], y, z[i])
-		lo, cc := bits.Add(uint(z0), uint(c), 0)
+		z1, z0 := mulAddWWW_g(x[i], y, z[i])     //得到结果的高低位, 高位作为进位继续加
+		lo, cc := bits.Add(uint(z0), uint(c), 0) //进位加上之前的进位c即可.
 		c, z[i] = Word(cc), Word(lo)
 		c += z1
 	}
@@ -208,7 +216,7 @@ func addMulVVW_g(z, x []Word, y Word) (c Word) {
 // q = ( x1 << _W + x0 - r)/y. m = floor(( _B^2 - 1 ) / d - _B). Requiring x1<y.
 // An approximate reciprocal with a reference to "Improved Division by Invariant Integers
 // (IEEE Transactions on Computers, 11 Jun. 2010)"
-func divWW(x1, x0, y, m Word) (q, r Word) {
+func divWW(x1, x0, y, m Word) (q, r Word) { //带余除法
 	s := nlz(y)
 	if s != 0 {
 		x1 = x1<<s | x0>>(_W-s)
@@ -268,7 +276,7 @@ func divWW(x1, x0, y, m Word) (q, r Word) {
 }
 
 // reciprocalWord return the reciprocal of the divisor. rec = floor(( _B^2 - 1 ) / u - _B). u = d1 << nlz(d1).
-func reciprocalWord(d1 Word) Word {
+func reciprocalWord(d1 Word) Word { // 计算d1的倒数
 	u := uint(d1 << nlz(d1))
 	x1 := ^u
 	x0 := uint(_M)

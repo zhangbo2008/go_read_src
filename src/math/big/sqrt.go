@@ -9,12 +9,12 @@ import (
 	"sync"
 )
 
-var threeOnce struct {
+var threeOnce struct { //所有单例的模式的变量,结构体里面加上Once即可.
 	sync.Once
 	v *Float
 }
 
-func three() *Float {
+func three() *Float { // 这个地方比较有意思, 通过sync.Once保证了这个公共变量只初始化一次就行了.节省内存资源.
 	threeOnce.Do(func() {
 		threeOnce.v = NewFloat(3.0)
 	})
@@ -67,7 +67,7 @@ func (z *Float) Sqrt(x *Float) *Float {
 	case 0:
 		// nothing to do
 	case 1:
-		z.exp++
+		z.exp++ //把b里面的指数,给mant里面.这样b就变小了.
 	case -1:
 		z.exp--
 	}

@@ -113,7 +113,7 @@ const m2 = 0x0f0f0f0f0f0f0f0f // 00001111 ...
 const m3 = 0x00ff00ff00ff00ff // etc.
 const m4 = 0x0000ffff0000ffff
 
-// OnesCount returns the number of one bits ("population count") in x.
+// OnesCount returns the number of one bits ("population count") in x. // x里面有多少bit是1
 func OnesCount(x uint) int {
 	if UintSize == 32 {
 		return OnesCount32(uint32(x))
@@ -173,7 +173,7 @@ func OnesCount64(x uint64) int {
 // To rotate x right by k bits, call RotateLeft(x, -k).
 //
 // This function's execution time does not depend on the inputs.
-func RotateLeft(x uint, k int) uint {
+func RotateLeft(x uint, k int) uint { //bit左转k个
 	if UintSize == 32 {
 		return uint(RotateLeft32(uint32(x), k))
 	}
@@ -419,7 +419,7 @@ func Sub32(x, y, borrow uint32) (diff, borrowOut uint32) {
 	// bit of y is set (^x & y) or if they are the same (^(x ^ y)) and a borrow
 	// from the lower place happens. If that borrow happens, the result will be
 	// 1 - 1 - 1 = 0 - 0 - 1 = 1 (& diff).
-	borrowOut = ((^x & y) | (^(x ^ y) & diff)) >> 31
+	borrowOut = ((^x & y) | (^(x ^ y) & diff)) >> 31 // (^x & y) x首位0, y首尾1,时候这个值=1, 运算优先级, 先 按位取反, 再 按位与, 说明xy 首位一样,但是也触发了借位.
 	return
 }
 

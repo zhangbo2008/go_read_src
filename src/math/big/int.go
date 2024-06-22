@@ -85,7 +85,7 @@ func NewInt(x int64) *Int {
 	var abs []Word
 	if x == 0 {
 	} else if _W == 32 && u>>32 != 0 {
-		abs = []Word{Word(u), Word(u >> 32)}
+		abs = []Word{Word(u), Word(u >> 32)} //little endian
 	} else {
 		abs = []Word{Word(u)}
 	}
