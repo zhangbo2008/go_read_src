@@ -31,7 +31,7 @@ func (r *Rand) ExpFloat64() float64 {
 	for {
 		j := r.Uint32()
 		i := j & 0xFF
-		x := float64(j) * float64(we[i])
+		x := float64(j) * float64(we[i]) //跟normal.go里面思路一样. 细节还是参考那片论文.
 		if j < ke[i] {
 			return x
 		}

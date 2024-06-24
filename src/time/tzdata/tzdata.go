@@ -36,7 +36,7 @@ func init() {
 }
 
 // get4s returns the little-endian 32-bit value at the start of s.
-func get4s(s string) int {
+func get4s(s string) int { //即系前32位位一个int
 	if len(s) < 4 {
 		return 0
 	}
@@ -53,7 +53,7 @@ func get2s(s string) int {
 
 // loadFromEmbeddedTZData returns the contents of the file with the given
 // name in an uncompressed zip file, where the contents of the file can
-// be found in embeddedTzdata.
+// be found in embeddedTzdata. //从数据zipdata里面, 找到信息返回. 信息匹配就是下面const
 // This is similar to time.loadTzinfoFromZip.
 func loadFromEmbeddedTZData(name string) (string, error) {
 	const (
@@ -102,7 +102,7 @@ func loadFromEmbeddedTZData(name string) (string, error) {
 			return "", errors.New("corrupt embedded tzdata")
 		}
 		xlen = get2s(z[idx+28:])
-		idx += 30 + namelen + xlen
+		idx += 30 + namelen + xlen //用idx偏移量来遍历.
 		return z[idx : idx+size], nil
 	}
 

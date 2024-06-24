@@ -176,7 +176,7 @@ func (r *Rand) int31n(n int32) int32 {
 
 // Intn returns, as an int, a non-negative pseudo-random number in the half-open interval [0,n).
 // It panics if n <= 0.
-func (r *Rand) Intn(n int) int {
+func (r *Rand) Intn(n int) int { //就是上面函数的封装而已.
 	if n <= 0 {
 		panic("invalid argument to Intn")
 	}
@@ -204,7 +204,7 @@ func (r *Rand) Float64() float64 {
 	// Instead of that, if we round up to 1, just try again.
 	// Getting 1 only happens 1/2⁵³ of the time, so most clients
 	// will not observe it anyway.
-again:
+again: //我们可以看到float底层也是用int来实现的. 思想就是区间归一化就完事.
 	f := float64(r.Int63()) / (1 << 63)
 	if f == 1 {
 		goto again // resample; this branch is taken O(never)
@@ -227,7 +227,7 @@ again:
 
 // Perm returns, as a slice of n ints, a pseudo-random permutation of the integers
 // in the half-open interval [0,n).
-func (r *Rand) Perm(n int) []int {
+func (r *Rand) Perm(n int) []int { //也是简单封装.
 	m := make([]int, n)
 	// In the following loop, the iteration when i=0 always swaps m[0] with m[0].
 	// A change to remove this useless iteration is to assign 1 to i in the init
@@ -303,6 +303,7 @@ func read(p []byte, src Source, readVal *int64, readPos *int8) (n int, err error
 	return
 }
 
+//========下面部分是再封装一下,作为顶级的api函数.
 /*
  * Top-level convenience functions
  */

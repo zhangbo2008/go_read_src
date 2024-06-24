@@ -36,7 +36,7 @@ type Location struct {
 	// To avoid the binary search through tx, keep a
 	// static one-element cache that gives the correct
 	// zone for the time when the Location was created.
-	// if cacheStart <= t < cacheEnd,
+	// if cacheStart <= t < cacheEnd,     如果当前时间再start, end之间, 直接返回cachezone.
 	// lookup can return cacheZone.
 	// The units for cacheStart and cacheEnd are seconds
 	// since January 1, 1970 UTC, to match the argument
@@ -73,7 +73,7 @@ var UTC *Location = &utcLoc
 // utcLoc is separate so that get can refer to &utcLoc
 // and ensure that it never returns a nil *Location,
 // even if a badly behaved client has changed UTC.
-var utcLoc = Location{name: "UTC"}
+var utcLoc = Location{name: "UTC"} // UTC时间的英文全称：Universal Time Coordinated，中文名称：协调世界时。 也就是格林尼治时间, 北京就是utc+8
 
 // Local represents the system's local time zone.
 // On Unix systems, Local consults the TZ environment
@@ -81,18 +81,18 @@ var utcLoc = Location{name: "UTC"}
 // use the system default /etc/localtime.
 // TZ="" means use UTC.
 // TZ="foo" means use file foo in the system timezone directory.
-var Local *Location = &localLoc
+var Local *Location = &localLoc //表示本地时间
 
 // localLoc is separate so that initLocal can initialize
 // it even if a client has changed Local.
-var localLoc Location
+var localLoc Location //本地Loc作为一个全局变量存在, 只能有一个.
 var localOnce sync.Once
 
 func (l *Location) get() *Location {
-	if l == nil {
+	if l == nil { // 如果l本身nil 那么返回默认的utc时间
 		return &utcLoc
 	}
-	if l == &localLoc {
+	if l == &localLoc { //如果l本身是本地时间,那么进行本地时间初始化. 底层使用systemcall来实现.跟操作系统有关.
 		localOnce.Do(initLocal)
 	}
 	return l
@@ -115,11 +115,11 @@ func FixedZone(name string, offset int) *Location {
 	const hoursBeforeUTC = 12
 	const hoursAfterUTC = 14
 	hour := offset / 60 / 60
-	if name == "" && -hoursBeforeUTC <= hour && hour <= +hoursAfterUTC && hour*60*60 == offset {
+	if name == "" && -hoursBeforeUTC <= hour && hour <= +hoursAfterUTC && hour*60*60 == offset { //如果没给名字.
 		unnamedFixedZonesOnce.Do(func() {
 			unnamedFixedZones = make([]*Location, hoursBeforeUTC+1+hoursAfterUTC)
 			for hr := -hoursBeforeUTC; hr <= +hoursAfterUTC; hr++ {
-				unnamedFixedZones[hr+hoursBeforeUTC] = fixedZone("", hr*60*60)
+				unnamedFixedZones[hr+hoursBeforeUTC] = fixedZone("", hr*60*60) //创建27个时区.每个偏移量是一小时即可.
 			}
 		})
 		return unnamedFixedZones[hour+hoursBeforeUTC]
@@ -145,7 +145,7 @@ func fixedZone(name string, offset int) *Location {
 // The returned information gives the name of the zone (such as "CET"),
 // the start and end times bracketing sec when that zone is in effect,
 // the offset in seconds east of UTC (such as -5*60*60), and whether
-// the daylight savings is being observed at that time.
+// the daylight savings is being observed at that time.//返回时区信息.
 func (l *Location) lookup(sec int64) (name string, offset int, start, end int64, isDST bool) {
 	l = l.get()
 

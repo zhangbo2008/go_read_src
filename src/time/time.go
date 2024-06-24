@@ -136,7 +136,7 @@ type Time struct {
 	// wall and ext encode the wall time seconds, wall time nanoseconds,
 	// and optional monotonic clock reading in nanoseconds.
 	//
-	// From high to low bit position, wall encodes a 1-bit flag (hasMonotonic),
+	// From high to low bit position, wall encodes a 1-bit flag (hasMonotonic),//是否有单调性
 	// a 33-bit seconds field, and a 30-bit wall time nanoseconds field.
 	// The nanoseconds field is in the range [0, 999999999].
 	// If the hasMonotonic bit is 0, then the 33-bit field must be zero
@@ -144,7 +144,7 @@ type Time struct {
 	// If the hasMonotonic bit is 1, then the 33-bit field holds a 33-bit
 	// unsigned wall seconds since Jan 1 year 1885, and ext holds a
 	// signed 64-bit monotonic clock reading, nanoseconds since process start.
-	wall uint64
+	wall uint64 //记录单位是纳秒
 	ext  int64
 
 	// loc specifies the Location that should be used to
@@ -160,7 +160,7 @@ const (
 	maxWall      = wallToInternal + (1<<33 - 1) // year 2157
 	minWall      = wallToInternal               // year 1885
 	nsecMask     = 1<<30 - 1
-	nsecShift    = 30
+	nsecShift    = 30 //2^30接近十亿.这里近似计算了.
 )
 
 // These helpers for manipulating the wall and monotonic clock readings
@@ -453,7 +453,7 @@ const (
 	unixToInternal int64 = (1969*365 + 1969/4 - 1969/100 + 1969/400) * secondsPerDay
 	internalToUnix int64 = -unixToInternal
 
-	wallToInternal int64 = (1884*365 + 1884/4 - 1884/100 + 1884/400) * secondsPerDay
+	wallToInternal int64 = (1884*365 + 1884/4 - 1884/100 + 1884/400) * secondsPerDay //这个是计算1884.1.1 到公元元年有多少秒.
 )
 
 // IsZero reports whether t represents the zero time instant,
@@ -935,7 +935,7 @@ func Since(t Time) Duration {
 }
 
 // Until returns the duration until t.
-// It is shorthand for t.Sub(time.Now()).
+// It is shorthand for t.Sub(time.Now()). //就是t-now返回一个int
 func Until(t Time) Duration {
 	if t.wall&hasMonotonic != 0 {
 		// Common case optimization: if t has monotonic time, then Sub will use only it.

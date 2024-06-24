@@ -941,18 +941,33 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 		下面的rand库包都是计算分布函数里面的抽样.
 
 		# src\math\rand\rng.go
-			是均匀分布的实现.
+			是均匀分布的实现.核心是0到2^32次幂区间的均匀采样的实现
 			理解一下里面的计算流程,至于为什么算法这么设计是对的,需要看相关论文.
 		# src\math\rand\rand.go
-			伪随机数.
+			伪随机数.利用上面的rng.go来实现(0,n)之间的int, float均匀抽样.
 		# src\math\rand\exp.go
 			这个是计算指数分布里面的抽样.
 
+		# src\math\rand\zipf.go
+		  zipf分布的采样, 都比较简单.
+		# src\math\rand\normal.go 
+			都是空间放缩, 细节参考注释内的论文.
+		# src\math\rand\exp.go   同上
+		# src\math\rand\v2 里面内容不太常用.
+			
+		# src\maps\maps.go
+			提供了map对象的equal方法.
+			~int, ~string 等各种类型前添加一个波浪线 ~，表示的是衍生类型，即使用 type 自定义的类型也可以被识别到(type MyInt int)，底层类型一致即可。
+			实现都比较简单.
 
-
-
-
-
+		#src\time\tzdata\tzdata.go
+			go可以直接函数声明,不写函数实现.
+		# src\time\format.go
+			时间和字符串的转化.
+		# src\time\time.go
+			时间对象和方法.不难看懂. 记住time的结构体比较有用. 他结构体是记录纳秒,和一个时区的信息.
+		# src\time\zoneinfo.go
+		  实现了时区的信息.
 
 
 

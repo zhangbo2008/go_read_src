@@ -20,7 +20,7 @@ const (
 	rn = 3.442619855899
 )
 
-func absInt32(i int32) uint32 {
+func absInt32(i int32) uint32 { //计算绝对值.
 	if i < 0 {
 		return uint32(-i)
 	}
@@ -37,7 +37,7 @@ func absInt32(i int32) uint32 {
 func (r *Rand) NormFloat64() float64 {
 	for {
 		j := int32(r.Uint32()) // Possibly negative
-		i := j & 0x7F
+		i := j & 0x7F          //跟127做交,他的后7位也是均匀分布的.所以可以根据最后7位的值,均匀分布到128上.然后下面一行乘以128分类上的一个权重.缩放到一个合理的数. // 就是我们累加128个正太分布的高度, 然后 1到2^32这个空间放缩到正太分布的高度累加和即可. 就把空间放缩到了.//更加细节的思路, 参考上面注释里面的论文.这里只提供一个基本思路.
 		x := float64(j) * float64(wn[i])
 		if absInt32(j) < kn[i] {
 			// This case should be hit better than 99% of the time.

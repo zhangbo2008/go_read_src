@@ -15,3 +15,4 @@ func main() {
 
 //go:noescape
 func Sum(x, y int) int
+func Sum2(x, y int) int
