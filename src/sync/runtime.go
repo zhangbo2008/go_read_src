@@ -31,7 +31,7 @@ func runtime_SemacquireRWMutex(s *uint32, lifo bool, skipframes int)
 // library and should not be used directly.
 // If handoff is true, pass count directly to the first waiter.
 // skipframes is the number of frames to omit during tracing, counting from
-// runtime_Semrelease's caller.
+// runtime_Semrelease's caller.  //增加s 信号量. 然后通知一个等待进程可以拿锁了.  // ps:如果信号量的值大于 0,则进程可以继续访问资源,并将信号量的值减 1;如果信号量的值等于 0,则进程会被阻塞,直到信号量的值变为正数。
 func runtime_Semrelease(s *uint32, handoff bool, skipframes int)
 
 // See runtime/sema.go for documentation.

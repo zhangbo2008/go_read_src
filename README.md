@@ -968,14 +968,35 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 			时间对象和方法.不难看懂. 记住time的结构体比较有用. 他结构体是记录纳秒,和一个时区的信息.
 		# src\time\zoneinfo.go
 		  实现了时区的信息.
+		# src\time\sleep.go
+			使用channel来实现timer计时器.
+		# src\time\tick.go
+		  跟上面sleep类似.
+		# src\time\genzabbrs.go
+			用来生成时区信息.
+		# src\time\sys_windows.go
+			文件读取的系统函数.
+		# src\sync\atomic\asm.s
+			具体实现都在runtime里面的汇编.后续再看底层实现.这里面给的是接口的函数原型.
+			可以看到里面操作的都是32位或者64位的整数
+			这些sync代码可以看到都是nocopy的,只要一个接口实现了lock和unlock,他就是nocopy的.
+			但是可以拷贝*mutex.
+			至于为什么锁和atomic我们都禁止他深拷贝. 但是这个东西不是强制的, 代码里面你可以复制nocopy的, 但是go vet竞争检测时候会提醒你这么做不安全.
+			因为深拷贝的锁,完全是一个新的.只是里面状态跟之前锁一样, 之后的操作(加锁,解锁)跟原来的锁没关系(可以写一个mutex锁复制代码,测试一下看看里面的state如何继承原锁,而后续操作又不继承原锁),那么既然没关系,为何不新创立一个对象锁.所以go里面直接建议禁止copy, 来维护代码的清晰.如果复制锁会让代码非常难以理解.
+		# src\sync\atomic\type.go
+			对上面asm.s进行的封装.让他可以支持更多的类型的元操作.
+		# src\sync\atomic\value.go
+			对任意类型的进行元操作支持.
+			里面的Store函数是并发的优秀模型.
+		# src\sync\map.go
+		  并发安全的map模型.
+		# src\sync\once.go
+			并发限制执行单次模型.
+		# src\sync\oncefunc.go
+			上面单次模型的拓展,
 
-
-
-
-
-
-
-
+		# src\sync\cond.go
+		  大部分场景下使用 channel 是比 sync.Cond方便的。不过我们要注意到，sync.Cond 提供了 Broadcast 方法，可以通知所有的等待者。想利用 channel 实现这个方法还是不容易的。我想这应该是 sync.Cond 唯一有用武之地的地方。
 
 
 

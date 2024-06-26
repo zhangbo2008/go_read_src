@@ -33,14 +33,14 @@ import (
 //
 // [Roberto Clapis's series on advanced concurrency patterns]: https://blogtitle.github.io/categories/concurrency/
 // [Bryan Mills's talk on concurrency patterns]: https://drive.google.com/file/d/1nPdvhB0PutEJzdCq5ms6UI58dp50fcAN/view
-type Cond struct {
+type Cond struct { //cond是一个进程设置一个触发条件.// cond使用比较复杂,可以看https://cloud.tencent.com/developer/article/2296185 讲的比较深入.//主要方法就是 wait来让一个进程等, signal让一个进程通知其他等的进程可以运行一个, Broadcast 让进程通知其他等的进程都可以运行.所以我们核心就是看这3个函数如何实现. 主要靠的是runtime底层,这里不深入其他底层库包.写清楚cond.go里面的设计思路.
 	noCopy noCopy
 
 	// L is held while observing or changing the condition
 	L Locker
 
-	notify  notifyList
-	checker copyChecker
+	notify  notifyList  //signal函数时候, 会让notify里面进程随机启动一个.
+	checker copyChecker //检查是否发生copy. 跟锁有关的概念都禁止copy.
 }
 
 // NewCond returns a new Cond with Locker l.
@@ -57,17 +57,18 @@ func NewCond(l Locker) *Cond {
 // typically cannot assume that the condition is true when
 // Wait returns. Instead, the caller should Wait in a loop:
 //
-//	c.L.Lock()
-//	for !condition() {
-//	    c.Wait()
-//	}
-//	... make use of condition ...
-//	c.L.Unlock()
-func (c *Cond) Wait() {
-	c.checker.check()
-	t := runtime_notifyListAdd(&c.notify)
-	c.L.Unlock()
-	runtime_notifyListWait(&c.notify, t)
+//	 //这是condition的使用方法.
+//		c.L.Lock()
+//		for !condition() {
+//		    c.Wait()
+//		}
+//		... make use of condition ...
+//		c.L.Unlock()
+func (c *Cond) Wait() { //底层设计runtime里面的函数.这里先跳过细节.
+	c.checker.check()                     //用来检查是否发生了copy
+	t := runtime_notifyListAdd(&c.notify) //wait之前的代码我们获得锁,然后我们告诉运行时,把c能激活的进程都记录在册.等待c.signal时候让他们醒一个.
+	c.L.Unlock()                          //这时就可以解锁了.因为下面的wait代码可以并发.不会资源竞争.
+	runtime_notifyListWait(&c.notify, t)  //启动等待.
 	c.L.Lock()
 }
 
@@ -80,7 +81,7 @@ func (c *Cond) Wait() {
 // are attempting to lock c.L, they may be awoken before a "waiting" goroutine.
 func (c *Cond) Signal() {
 	c.checker.check()
-	runtime_notifyListNotifyOne(&c.notify)
+	runtime_notifyListNotifyOne(&c.notify) //之前wait函数注册的那些,可以激活了.
 }
 
 // Broadcast wakes all goroutines waiting on c.
@@ -95,9 +96,9 @@ func (c *Cond) Broadcast() {
 // copyChecker holds back pointer to itself to detect object copying.
 type copyChecker uintptr
 
-func (c *copyChecker) check() {
+func (c *copyChecker) check() { // 用来防止复制的.
 	// Check if c has been copied in three steps:
-	// 1. The first comparison is the fast-path. If c has been initialized and not copied, this will return immediately. Otherwise, c is either not initialized, or has been copied.
+	// 1. The first comparison is the fast-path. If c has been initialized and not copied, this will return immediately. Otherwise, c is either not initialized, or has been copied.  因为我们调用wait时候会触发这个check, 如果复制了.那么105行会改变c的值.从而就能检测出来cond被复制了. 比如 cond1=cond  cond.checker=0x0, cond1.checker=0x0,然后我们cond.wait()从而云新都105行让 cond.checker=0xffffcc(举例子), 而cond1.wait()也运行到105行,那么就会触发 0xffffcc!=0x0的判断. 具体来说这里:uintptr(*c) 是c指向的内容解析成数字, uintptr(unsafe.Pointer(c))是c本身也就是c自己这个数字解析成数字.
 	// 2. Ensure c is initialized. If the CAS succeeds, we're done. If it fails, c was either initialized concurrently and we simply lost the race, or c has been copied.
 	// 3. Do step 1 again. Now that c is definitely initialized, if this fails, c was copied.
 	if uintptr(*c) != uintptr(unsafe.Pointer(c)) &&

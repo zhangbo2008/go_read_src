@@ -32,7 +32,7 @@ func fatal(string)
 // A failed call to TryLock does not establish any “synchronizes before”
 // relation at all.
 type Mutex struct {
-	state int32
+	state int32 // 0表示没有锁上, 其他值表示锁上了.
 	sema  uint32
 }
 
@@ -44,9 +44,9 @@ type Locker interface {
 
 const (
 	mutexLocked = 1 << iota // mutex is locked
-	mutexWoken
+	mutexWoken              //用来表示这个锁刚才被从woken中唤醒了.
 	mutexStarving
-	mutexWaiterShift = iota
+	mutexWaiterShift = iota //这个字段用来检查是否有人在等待这个锁
 
 	// Mutex fairness.
 	//
@@ -57,17 +57,18 @@ const (
 	// already running on CPU and there can be lots of them, so a woken up
 	// waiter has good chances of losing. In such case it is queued at front
 	// of the wait queue. If a waiter fails to acquire the mutex for more than 1ms,
-	// it switches mutex to the starvation mode.
+	// it switches mutex to the starvation mode.// 一般是normal, 在队列里面排序, 先进先出. 但是这时候新来的进程有更先优先级. 如果等的等不到超过1ms, 就进入饥饿模式.
+
 	//
 	// In starvation mode ownership of the mutex is directly handed off from
 	// the unlocking goroutine to the waiter at the front of the queue.
 	// New arriving goroutines don't try to acquire the mutex even if it appears
 	// to be unlocked, and don't try to spin. Instead they queue themselves at
-	// the tail of the wait queue.
+	// the tail of the wait queue. //饥饿模式下拿到锁的进程直接跑到队列头, 新来的进程直接进到队尾. 这个意思就是拿到锁的用于不放开了.他一直用到他自己主动放弃才行.
 	//
 	// If a waiter receives ownership of the mutex and sees that either
 	// (1) it is the last waiter in the queue, or (2) it waited for less than 1 ms,
-	// it switches mutex back to normal operation mode.
+	// it switches mutex back to normal operation mode. //这两种模式会让锁变成普通模式.
 	//
 	// Normal mode has considerably better performance as a goroutine can acquire
 	// a mutex several times in a row even if there are blocked waiters.
@@ -77,44 +78,44 @@ const (
 
 // Lock locks m.
 // If the lock is already in use, the calling goroutine
-// blocks until the mutex is available.
+// blocks until the mutex is available. //如果已经锁上了,那么这个进程就一直等到互斥锁放开.
 func (m *Mutex) Lock() {
 	// Fast path: grab unlocked mutex.
-	if atomic.CompareAndSwapInt32(&m.state, 0, mutexLocked) {
-		if race.Enabled {
-			race.Acquire(unsafe.Pointer(m))
+	if atomic.CompareAndSwapInt32(&m.state, 0, mutexLocked) { //利用元操作, 如果state=0表示没有锁上, 那么就让state=1进行锁上然后函数返回. 如果已经锁上了,那么就走91行.
+		if race.Enabled { //这个地方会检测是否代码开始起race检测. race是进程竞争的意思. 比如一个进程改a, 另一个进程也同时可以改a, 那么就会race检测报warning.
+			race.Acquire(unsafe.Pointer(m)) // 如果race检测,那么我们就用race来获取这个m变量.//至于race底层代码还是runtime里面, 留在以后研究底层实现.
 		}
 		return
 	}
 	// Slow path (outlined so that the fast path can be inlined)
-	m.lockSlow()
+	m.lockSlow() //这里面一直等, 直到拿到锁, 然后锁上.
 }
 
 // TryLock tries to lock m and reports whether it succeeded.
 //
 // Note that while correct uses of TryLock do exist, they are rare,
 // and use of TryLock is often a sign of a deeper problem
-// in a particular use of mutexes.
+// in a particular use of mutexes. //这里如果拿不到锁, 直接放弃.这是跟上面函数的区别.
 func (m *Mutex) TryLock() bool {
 	old := m.state
-	if old&(mutexLocked|mutexStarving) != 0 {
+	if old&(mutexLocked|mutexStarving) != 0 { // state 如果是mutexLocked, 那么直接返回失败,  state 如果是mutexStarving, 那么直接返回失败,因为starvign模式下,占有锁的进程不可能被你抢到, 只能等他主动放弃锁的权利才行.
 		return false
 	}
 
 	// There may be a goroutine waiting for the mutex, but we are
 	// running now and can try to grab the mutex before that
 	// goroutine wakes up.
-	if !atomic.CompareAndSwapInt32(&m.state, old, old|mutexLocked) {
+	if !atomic.CompareAndSwapInt32(&m.state, old, old|mutexLocked) { //代码运行到这行, 说明锁现在可以尝试去拿到. 那么我们这里用cas操作来变锁的状态.如果我们这行还能读取到state=old, 那么就尝试把状态变为locked. 如果成功了, 那么就115行返回. 如果失败了就109行返回false.
 		return false
 	}
 
-	if race.Enabled {
+	if race.Enabled { //这地方还是竞争检测一下, 具体底层race留给以后研究.
 		race.Acquire(unsafe.Pointer(m))
 	}
 	return true
 }
 
-func (m *Mutex) lockSlow() {
+func (m *Mutex) lockSlow() { //整个思路比较复杂, 核心就是我们最上面注释里面写的, 普通模式和饥饿模式的转化, 里面的判定.
 	var waitStartTime int64
 	starving := false
 	awoke := false
@@ -169,7 +170,7 @@ func (m *Mutex) lockSlow() {
 				waitStartTime = runtime_nanotime()
 			}
 			runtime_SemacquireMutex(&m.sema, queueLifo, 1)
-			starving = starving || runtime_nanotime()-waitStartTime > starvationThresholdNs
+			starving = starving || runtime_nanotime()-waitStartTime > starvationThresholdNs //starvationThresholdNs表示1ms
 			old = m.state
 			if old&mutexStarving != 0 {
 				// If this goroutine was woken and mutex is in starvation mode,
@@ -216,19 +217,19 @@ func (m *Mutex) Unlock() {
 	}
 
 	// Fast path: drop lock bit.
-	new := atomic.AddInt32(&m.state, -mutexLocked)
-	if new != 0 {
+	new := atomic.AddInt32(&m.state, -mutexLocked) //状态1 减去1,如果结果是0, 那么就是解锁了.
+	if new != 0 {                                  //如果解锁失败, 那么就进入慢解锁.
 		// Outlined slow path to allow inlining the fast path.
 		// To hide unlockSlow during tracing we skip one extra frame when tracing GoUnblock.
 		m.unlockSlow(new)
 	}
 }
 
-func (m *Mutex) unlockSlow(new int32) {
+func (m *Mutex) unlockSlow(new int32) { //new是当前的状态.
 	if (new+mutexLocked)&mutexLocked == 0 {
 		fatal("sync: unlock of unlocked mutex")
 	}
-	if new&mutexStarving == 0 {
+	if new&mutexStarving == 0 { //非饥饿模式.
 		old := new
 		for {
 			// If there are no waiters or a goroutine has already
@@ -238,10 +239,11 @@ func (m *Mutex) unlockSlow(new int32) {
 			// since we did not observe mutexStarving when we unlocked the mutex above.
 			// So get off the way.
 			if old>>mutexWaiterShift == 0 || old&(mutexLocked|mutexWoken|mutexStarving) != 0 {
-				return
+				return //It enters a loop where it checks if there are no waiters (goroutines waiting for the mutex) or if the mutex has already been grabbed by another goroutine since it was unlocked.
+				// If either condition is true, the function returns, as there’s nothing to do.
 			}
 			// Grab the right to wake someone.
-			new = (old - 1<<mutexWaiterShift) | mutexWoken
+			new = (old - 1<<mutexWaiterShift) | mutexWoken //If there are waiters, it tries to claim the right to wake one up by setting the mutexWoken bit in the mutex state.
 			if atomic.CompareAndSwapInt32(&m.state, old, new) {
 				runtime_Semrelease(&m.sema, false, 1)
 				return

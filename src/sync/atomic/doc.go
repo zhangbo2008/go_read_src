@@ -39,7 +39,7 @@
 //
 // In the terminology of the Go memory model, if the effect of
 // an atomic operation A is observed by atomic operation B,
-// then A “synchronizes before” B.
+// then A “synchronizes before” B.       A被B观察到, 表示A在B之前
 // Additionally, all the atomic operations executed in a program
 // behave as though executed in some sequentially consistent order.
 // This definition provides the same semantics as

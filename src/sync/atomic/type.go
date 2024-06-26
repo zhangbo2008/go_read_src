@@ -10,11 +10,11 @@ import "unsafe"
 // The zero value is false.
 type Bool struct {
 	_ noCopy
-	v uint32
+	v uint32 //内置一个32位可以元操作的数据.
 }
 
 // Load atomically loads and returns the value stored in x.
-func (x *Bool) Load() bool { return LoadUint32(&x.v) != 0 }
+func (x *Bool) Load() bool { return LoadUint32(&x.v) != 0 } //LoadUint32 读取地址&x.v的值, 然后返回.
 
 // Store atomically stores val into x.
 func (x *Bool) Store(val bool) { StoreUint32(&x.v, b32(val)) }
@@ -28,7 +28,7 @@ func (x *Bool) CompareAndSwap(old, new bool) (swapped bool) {
 }
 
 // b32 returns a uint32 0 or 1 representing b.
-func b32(b bool) uint32 {
+func b32(b bool) uint32 { //布尔进行数字化
 	if b {
 		return 1
 	}
@@ -44,7 +44,7 @@ type Pointer[T any] struct {
 	// Mention *T in a field to disallow conversion between Pointer types.
 	// See go.dev/issue/56603 for more details.
 	// Use *T, not T, to avoid spurious recursive type definition errors.
-	_ [0]*T
+	_ [0]*T //一个空数组, 里面存0个 *T类型的指针.并用不到这个变量.所以给他起名_了.之所以这么设置是为了防止指针之间互相转化.
 
 	_ noCopy
 	v unsafe.Pointer

@@ -21,7 +21,7 @@ type Once struct {
 	// The hot path is inlined at every call site.
 	// Placing done first allows more compact instructions on some architectures (amd64/386),
 	// and fewer instructions (to calculate offset) on other architectures.
-	done atomic.Uint32
+	done atomic.Uint32 //一个锁加一个flag记录即可.
 	m    Mutex
 }
 
@@ -60,17 +60,17 @@ func (o *Once) Do(f func()) {
 	// This is why the slow path falls back to a mutex, and why
 	// the o.done.Store must be delayed until after f returns.
 
-	if o.done.Load() == 0 {
+	if o.done.Load() == 0 { // 如果我们flag=0表示还没启用过, 我们才进行f函数调用. 否则啥也不干. 这就保证了单次.
 		// Outlined slow-path to allow inlining of the fast-path.
 		o.doSlow(f)
 	}
 }
 
-func (o *Once) doSlow(f func()) {
+func (o *Once) doSlow(f func()) { // do f函数,就是加锁即可.
 	o.m.Lock()
 	defer o.m.Unlock()
-	if o.done.Load() == 0 {
-		defer o.done.Store(1)
+	if o.done.Load() == 0 { //注意因为并发关系,我们这个进程跑到这里这段时间消耗了,可能其他进程也修改了o.done变量.所以我们还需要读一次这个o.done变量.再次确认是单例模式.
+		defer o.done.Store(1) //这里确认好了我们就在函数f结束之后运行这个o.done变成1即可.
 		f()
 	}
 }

@@ -6,11 +6,11 @@ package time
 
 // Sleep pauses the current goroutine for at least the duration d.
 // A negative or zero duration causes Sleep to return immediately.
-func Sleep(d Duration)
+func Sleep(d Duration) //底层在runtime函数里面.涉及运行时的底层比较复杂,所以这里面我们先关心sleep之上是如何封装的.
 
 // Interface to timers implemented in package runtime.
 // Must be in sync with ../runtime/time.go:/^type timer
-type runtimeTimer struct {
+type runtimeTimer struct { // 运行时的计时器的实现. 计时器就是每隔一段定义的时间就触发一次.
 	pp       uintptr
 	when     int64
 	period   int64
@@ -25,9 +25,9 @@ type runtimeTimer struct {
 // It returns what the time will be, in nanoseconds, Duration d in the future.
 // If d is negative, it is ignored. If the returned value would be less than
 // zero because of an overflow, MaxInt64 is returned.
-func when(d Duration) int64 {
+func when(d Duration) int64 { //返回当前时间+d的时间
 	if d <= 0 {
-		return runtimeNano()
+		return runtimeNano() // runtimeNano也是runtime库来实现.
 	}
 	t := runtimeNano() + int64(d)
 	if t < 0 {
@@ -47,7 +47,7 @@ func modTimer(t *runtimeTimer, when, period int64, f func(any, uintptr), arg any
 // When the Timer expires, the current time will be sent on C,
 // unless the Timer was created by AfterFunc.
 // A Timer must be created with NewTimer or AfterFunc.
-type Timer struct {
+type Timer struct { //时间到了,就往C里面传入当前时间.
 	C <-chan Time
 	r runtimeTimer
 }
@@ -74,7 +74,7 @@ type Timer struct {
 // Stop does not wait for f to complete before returning.
 // If the caller needs to know whether f is completed, it must coordinate
 // with f explicitly.
-func (t *Timer) Stop() bool {
+func (t *Timer) Stop() bool { //暂停计时器, 具体实现也是runtime.time文件里面.
 	if t.r.f == nil {
 		panic("time: Stop called on uninitialized Timer")
 	}
@@ -82,12 +82,12 @@ func (t *Timer) Stop() bool {
 }
 
 // NewTimer creates a new Timer that will send
-// the current time on its channel after at least duration d.
+// the current time on its channel after at least duration d. //这个函数比较核心, 创建计时器d纳秒之后触发,
 func NewTimer(d Duration) *Timer {
 	c := make(chan Time, 1)
 	t := &Timer{
 		C: c,
-		r: runtimeTimer{
+		r: runtimeTimer{ // 创建一个当前时间+d之后, 触发sendTime方法. 参数是 一个channel 里面装Time,而我们计时器,通过channel来触发我们想要触发的其他效果.(其他代码实现)
 			when: when(d),
 			f:    sendTime,
 			arg:  c,
@@ -139,7 +139,7 @@ func (t *Timer) Reset(d Duration) bool {
 	return resetTimer(&t.r, w)
 }
 
-// sendTime does a non-blocking send of the current time on c.
+// sendTime does a non-blocking send of the current time on c. //触发send函数就是把当前时间Now放到c这个channel里面.
 func sendTime(c any, seq uintptr) {
 	select {
 	case c.(chan Time) <- Now():

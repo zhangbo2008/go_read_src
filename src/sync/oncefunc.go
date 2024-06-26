@@ -8,7 +8,7 @@ package sync
 // may be called concurrently.
 //
 // If f panics, the returned function will panic with the same value on every call.
-func OnceFunc(f func()) func() {
+func OnceFunc(f func()) func() { // 这个函数返回一个新函数, 这个新函数会调用f函数至多一次.并发安全.
 	var (
 		once  Once
 		valid bool
@@ -16,8 +16,8 @@ func OnceFunc(f func()) func() {
 	)
 	// Construct the inner closure just once to reduce costs on the fast path.
 	g := func() {
-		defer func() {
-			p = recover()
+		defer func() { //先写一个析构函数. 为什么叫析构函数呢. 因为c++里面 ~类名表示析构函数, ~在英语叫sim, 渐进相等. latex里面 是 \sim
+			p = recover() //这个函数里面的写法是标准写法, recover在defer中使用, 用来恢复执行,下面检测valid,如果非法那么就panic操作.
 			if !valid {
 				// Re-panic immediately so on the first call the user gets a
 				// complete stack trace into f.
@@ -40,7 +40,7 @@ func OnceFunc(f func()) func() {
 // returned by f. The returned function may be called concurrently.
 //
 // If f panics, the returned function will panic with the same value on every call.
-func OnceValue[T any](f func() T) func() T {
+func OnceValue[T any](f func() T) func() T { //就是多个返回值.
 	var (
 		once   Once
 		valid  bool

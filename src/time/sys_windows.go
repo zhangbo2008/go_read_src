@@ -33,7 +33,7 @@ func closefd(fd uintptr) {
 	syscall.Close(syscall.Handle(fd))
 }
 
-func preadn(fd uintptr, buf []byte, off int) error {
+func preadn(fd uintptr, buf []byte, off int) error { //从fd+off 未知开始读取数据到buf
 	whence := seekStart
 	if off < 0 {
 		whence = seekEnd

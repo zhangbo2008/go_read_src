@@ -6,8 +6,8 @@
 
 #include "textflag.h"
 
-TEXT ·SwapInt32(SB),NOSPLIT,$0
-	JMP	runtime∕internal∕atomic·Xchg(SB)
+TEXT ·SwapInt32(SB),NOSPLIT,$0     //$0是栈大小,通常为0,汇编一般用寄存器来运算.
+	JMP	runtime∕internal∕atomic·Xchg(SB)        //调到运行时的汇编代码.
 
 TEXT ·SwapUint32(SB),NOSPLIT,$0
 	JMP	runtime∕internal∕atomic·Xchg(SB)

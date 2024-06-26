@@ -32,19 +32,21 @@ import (
 // LoadOrStore is a write operation when it returns loaded set to false;
 // CompareAndSwap is a write operation when it returns swapped set to true;
 // and CompareAndDelete is a write operation when it returns deleted set to true.
+
+// Map 是一种类似于 Go 语言中的 map[any]any 的数据结构，但是它是安全的，可以在多个 goroutine 中并发使用，而无需额外的锁定或协调。加载、存储和删除操作的运行时间在平均情况下是常数时间。 // // Map 类型是专门化的。大多数代码应使用普通的 Go map，并通过单独的锁定或协调来保证安全，这样可以提高类型安全性，并使维护其他不变量变得更容易。 // // Map 类型是为两种常见用例优化的：（1）当给定键的条目只被写入一次但被多次读取时，例如只增不减的缓存，或（2）当多个 goroutine 针对不重叠的键集合进行读取、写入和覆盖条目。在这两种情况下，与使用带有单独互斥锁（Mutex）或读写互斥锁（RWMutex）的 Go map 相比，使用 Map 可以显著减少锁竞争。 // // 初始化的 Map 是空的，可以直接使用。Map 必须在首次使用后不得复制。 // // 在 Go 内存模型的术语中，Map 安排了一个写操作“在”任何观察到写操作效果的读操作之前“同步”。其中，读操作和写操作的定义如下： // 加载（Load）、加载并删除（LoadAndDelete）、加载或存储（LoadOrStore）、交换（Swap）、比较并交换（CompareAndSwap）和比较并删除（CompareAndDelete）是读操作； // 删除（Delete）、加载并删除（LoadAndDelete）、存储（Store）和交换（Swap）是写操作； // 加载或存储（LoadOrStore）在返回 loaded 设置为 false 时是写操作； // 比较并交换（CompareAndSwap）在返回 swapped 设置为 true 时是写操作； // 比较并删除（CompareAndDelete）在返回 deleted 设置为 true 时是写操作。
 type Map struct {
 	mu Mutex
 
 	// read contains the portion of the map's contents that are safe for
-	// concurrent access (with or without mu held).
+	// concurrent access (with or without mu held).     这个字段保存的是并发安全的内容
 	//
 	// The read field itself is always safe to load, but must only be stored with
-	// mu held.
+	// mu held.                         load是安全的, 保存时候必须持有mu锁才行.
 	//
 	// Entries stored in read may be updated concurrently without mu, but updating
 	// a previously-expunged entry requires that the entry be copied to the dirty
 	// map and unexpunged with mu held.
-	read atomic.Pointer[readOnly]
+	read atomic.Pointer[readOnly] //
 
 	// dirty contains the portion of the map's contents that require mu to be
 	// held. To ensure that the dirty map can be promoted to the read map quickly,
@@ -56,7 +58,7 @@ type Map struct {
 	//
 	// If the dirty map is nil, the next write to the map will initialize it by
 	// making a shallow copy of the clean map, omitting stale entries.
-	dirty map[any]*entry
+	dirty map[any]*entry //带锁才能修改的部分记作dirty, 带锁之后把内容写入read map里面.//如果dirty map是nil, 那么下一次写入map, 会往dirty进行map的浅拷贝,也就是拷贝指针.
 
 	// misses counts the number of loads since the read map was last updated that
 	// needed to lock mu to determine whether the key was present.
@@ -64,18 +66,18 @@ type Map struct {
 	// Once enough misses have occurred to cover the cost of copying the dirty
 	// map, the dirty map will be promoted to the read map (in the unamended
 	// state) and the next store to the map will make a new dirty copy.
-	misses int
+	misses int //上次更新之后来了多少次读的请求.
 }
 
 // readOnly is an immutable struct stored atomically in the Map.read field.
 type readOnly struct {
 	m       map[any]*entry
-	amended bool // true if the dirty map contains some key not in m.
+	amended bool // true if the dirty map contains some key not in m. 是否有改动在dirty里面.
 }
 
 // expunged is an arbitrary pointer that marks entries which have been deleted
 // from the dirty map.
-var expunged = new(any)
+var expunged = new(any) //指向被删除的东西, 这里就是new了一个空对象.
 
 // An entry is a slot in the map corresponding to a particular key.
 type entry struct {
@@ -125,18 +127,18 @@ func (m *Map) Load(key any) (value any, ok bool) {
 		// Avoid reporting a spurious miss if m.dirty got promoted while we were
 		// blocked on m.mu. (If further loads of the same key will not miss, it's
 		// not worth copying the dirty map for this key.)
-		read = m.loadReadOnly()
+		read = m.loadReadOnly() //这行重新读了123行,因为我们126行等待锁的时候m可能已经变了.
 		e, ok = read.m[key]
-		if !ok && read.amended {
-			e, ok = m.dirty[key]
+		if !ok && read.amended { //如果dirty里面有内容,并且read里面没有这个key
+			e, ok = m.dirty[key] //查看dirty里面是否有
 			// Regardless of whether the entry was present, record a miss: this key
 			// will take the slow path until the dirty map is promoted to the read
 			// map.
-			m.missLocked()
+			m.missLocked() //因为我们dirty里面有内容, 所以我们下次读需要锁才能读到dirty内容.所以missLocked表示记录一下要求锁的load次数.
 		}
 		m.mu.Unlock()
 	}
-	if !ok {
+	if !ok { //这行保证了133行无论失败成功都能正确return
 		return nil, false
 	}
 	return e.load()
@@ -202,30 +204,30 @@ func (e *entry) swapLocked(i *any) *any {
 // The loaded result is true if the value was loaded, false if stored.
 func (m *Map) LoadOrStore(key, value any) (actual any, loaded bool) {
 	// Avoid locking if it's a clean hit.
-	read := m.loadReadOnly()
+	read := m.loadReadOnly() //先看readonly里面是否有
 	if e, ok := read.m[key]; ok {
 		actual, loaded, ok := e.tryLoadOrStore(value)
 		if ok {
 			return actual, loaded
 		}
 	}
-
+	//如果没有,那么我们就要往里面写入了.
 	m.mu.Lock()
-	read = m.loadReadOnly()
-	if e, ok := read.m[key]; ok {
+	read = m.loadReadOnly()       //因为上一步等锁了,所以这里有可能readonly里面变了,所以再判断一次.
+	if e, ok := read.m[key]; ok { //这次如果read里面有了,看看e是不是已经废弃的.
 		if e.unexpungeLocked() {
-			m.dirty[key] = e
+			m.dirty[key] = e //存到dirty,用于修改.
 		}
 		actual, loaded, _ = e.tryLoadOrStore(value)
 	} else if e, ok := m.dirty[key]; ok {
 		actual, loaded, _ = e.tryLoadOrStore(value)
 		m.missLocked()
-	} else {
+	} else { //这里把数据写入.
 		if !read.amended {
 			// We're adding the first new key to the dirty map.
 			// Make sure it is allocated and mark the read-only map as incomplete.
-			m.dirtyLocked()
-			m.read.Store(&readOnly{m: read.m, amended: true})
+			m.dirtyLocked()                                   //read放入dirty
+			m.read.Store(&readOnly{m: read.m, amended: true}) // 然后 read里面内容重新建立一个副本,设置修改为true
 		}
 		m.dirty[key] = newEntry(value)
 		actual, loaded = value, false
@@ -254,10 +256,10 @@ func (e *entry) tryLoadOrStore(i any) (actual any, loaded, ok bool) {
 	// shouldn't bother heap-allocating.
 	ic := i
 	for {
-		if e.p.CompareAndSwap(nil, &ic) {
+		if e.p.CompareAndSwap(nil, &ic) { //如果赋值成功就返回
 			return i, false, true
 		}
-		p = e.p.Load()
+		p = e.p.Load() //如果赋值不成功,说明e.p不是nil了.那么再load他即可.
 		if p == expunged {
 			return nil, false, false
 		}
@@ -300,7 +302,7 @@ func (m *Map) Delete(key any) {
 func (e *entry) delete() (value any, ok bool) {
 	for {
 		p := e.p.Load()
-		if p == nil || p == expunged {
+		if p == nil || p == expunged { //如果删过了,就返回
 			return nil, false
 		}
 		if e.p.CompareAndSwap(p, nil) {
@@ -481,16 +483,16 @@ func (m *Map) Range(f func(key, value any) bool) {
 }
 
 func (m *Map) missLocked() {
-	m.misses++
+	m.misses++ //load 需要锁的次数加1
 	if m.misses < len(m.dirty) {
 		return
 	}
-	m.read.Store(&readOnly{m: m.dirty})
-	m.dirty = nil
+	m.read.Store(&readOnly{m: m.dirty}) //把m.read内容整个 替换为m.dirty
+	m.dirty = nil                       //清空dirty
 	m.misses = 0
 }
 
-func (m *Map) dirtyLocked() {
+func (m *Map) dirtyLocked() { // read内容都放到dirty里面.
 	if m.dirty != nil {
 		return
 	}

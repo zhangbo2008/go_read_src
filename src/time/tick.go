@@ -5,7 +5,7 @@
 package time
 
 // A Ticker holds a channel that delivers “ticks” of a clock
-// at intervals.
+// at intervals.   Ticker定时器.
 type Ticker struct {
 	C <-chan Time // The channel on which the ticks are delivered.
 	r runtimeTimer
