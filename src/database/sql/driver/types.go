@@ -54,13 +54,13 @@ type Valuer interface {
 //   - all other types are an error
 var Bool boolType
 
-type boolType struct{}
+type boolType struct{} //这个类表示布尔类型.
 
 var _ ValueConverter = boolType{}
 
 func (boolType) String() string { return "Bool" }
 
-func (boolType) ConvertValue(src any) (Value, error) {
+func (boolType) ConvertValue(src any) (Value, error) { //给一个src任意类型, 把他转为布尔类型.
 	switch s := src.(type) {
 	case bool:
 		return s, nil
@@ -79,10 +79,10 @@ func (boolType) ConvertValue(src any) (Value, error) {
 	}
 
 	sv := reflect.ValueOf(src)
-	switch sv.Kind() {
+	switch sv.Kind() { //数字用这个reflect转化.
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		iv := sv.Int()
-		if iv == 1 || iv == 0 {
+		if iv == 1 || iv == 0 { //我们只处理1和0的情况, 其他情况都认为非法.
 			return iv == 1, nil
 		}
 		return nil, fmt.Errorf("sql/driver: couldn't convert %d into type bool", iv)
@@ -101,7 +101,7 @@ func (boolType) ConvertValue(src any) (Value, error) {
 // respecting the limits of an int32 value.
 var Int32 int32Type
 
-type int32Type struct{}
+type int32Type struct{} //整数类型.
 
 var _ ValueConverter = int32Type{}
 
@@ -134,7 +134,7 @@ func (int32Type) ConvertValue(v any) (Value, error) {
 // If the value is already a string or []byte, it's unchanged.
 // If the value is of another type, conversion to string is done
 // with fmt.Sprintf("%v", v).
-var String stringType
+var String stringType //字符串类型.
 
 type stringType struct{}
 

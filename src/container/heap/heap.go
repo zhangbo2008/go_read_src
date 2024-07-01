@@ -27,7 +27,7 @@ import "sort"
 //
 // Note that [Push] and [Pop] in this interface are for package heap's
 // implementation to call. To add and remove things from the heap,
-// use [heap.Push] and [heap.Pop].
+// use [heap.Push] and [heap.Pop]. //一个小根堆.
 type Interface interface {
 	sort.Interface
 	Push(x any) // add x as element Len()
@@ -41,7 +41,7 @@ type Interface interface {
 func Init(h Interface) {
 	// heapify
 	n := h.Len()
-	for i := n/2 - 1; i >= 0; i-- {
+	for i := n/2 - 1; i >= 0; i-- { //从叶子开始调整.
 		down(h, i, n)
 	}
 }
@@ -100,19 +100,19 @@ func up(h Interface, j int) {
 func down(h Interface, i0, n int) bool {
 	i := i0
 	for {
-		j1 := 2*i + 1
+		j1 := 2*i + 1          //j1左节点
 		if j1 >= n || j1 < 0 { // j1 < 0 after int overflow
 			break
 		}
-		j := j1 // left child
-		if j2 := j1 + 1; j2 < n && h.Less(j2, j1) {
+		j := j1                                     // left child
+		if j2 := j1 + 1; j2 < n && h.Less(j2, j1) { // j2是右节点. 我们要求的堆是小跟堆,所以我们要找到child里面最小的,然后把他变到父节点即可.
 			j = j2 // = 2*i + 2  // right child
 		}
-		if !h.Less(j, i) {
+		if !h.Less(j, i) { //如果符合小跟堆,就退出循环
 			break
 		}
-		h.Swap(i, j)
-		i = j
+		h.Swap(i, j) //维护成小跟堆.
+		i = j        //再重新计算.
 	}
-	return i > i0
+	return i > i0 //返回是否进行了调整.
 }

@@ -20,11 +20,11 @@ type Ordered interface {
 		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
 		~float32 | ~float64 |
 		~string
-}
+} // ~类型表示底层是这个类型就行的.范围更大. //这里面表示这些类型都可以.用来表示可以排序的类. //下面就用泛型.
 
 // Less reports whether x is less than y.
 // For floating-point types, a NaN is considered less than any non-NaN,
-// and -0.0 is not less than (is equal to) 0.0.
+// and -0.0 is not less than (is equal to) 0.0.//  Nan比非Noan要小. NaN是not a number的缩写.
 func Less[T Ordered](x, y T) bool {
 	return (isNaN(x) && !isNaN(y)) || x < y
 }
@@ -54,13 +54,13 @@ func Compare[T Ordered](x, y T) int {
 
 // isNaN reports whether x is a NaN without requiring the math package.
 // This will always return false if T is not floating-point.
-func isNaN[T Ordered](x T) bool {
+func isNaN[T Ordered](x T) bool { ////这是浮点数硬件决定的.  只有nan 符合 自己不等于自己这个性质.
 	return x != x
 }
 
 // Or returns the first of its arguments that is not equal to the zero value.
 // If no argument is non-zero, it returns the zero value.
-func Or[T comparable](vals ...T) T {
+func Or[T comparable](vals ...T) T { // 返回T每个元素做or运算的结果.
 	var zero T
 	for _, val := range vals {
 		if val != zero {

@@ -4,7 +4,7 @@
 
 // Package expvar provides a standardized interface to public variables, such
 // as operation counters in servers. It exposes these variables via HTTP at
-// /debug/vars in JSON format.
+// /debug/vars in JSON format. //expvar 提供了一个公共的变量的接口.比如server里面的一个操作计数器.
 //
 // Operations to set or modify these public variables are atomic.
 //
@@ -49,7 +49,7 @@ type jsonVar interface {
 }
 
 // Int is a 64-bit integer variable that satisfies the [Var] interface.
-type Int struct {
+type Int struct { // 这个类型Int, 是Var接口的一种实现.
 	i atomic.Int64
 }
 

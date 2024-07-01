@@ -59,10 +59,10 @@ import (
 // in this package. This is used, for example, when a user selects a cursor
 // such as "select cursor(select * from my_table) from dual". If the [Rows]
 // from the select is closed, the cursor [Rows] will also be closed.
-type Value any
+type Value any //数据库中数据值
 
 // NamedValue holds both the value name and value.
-type NamedValue struct {
+type NamedValue struct { //数据库带名字的数据值
 	// If the Name is not empty it should be used for the parameter identifier and
 	// not the ordinal position.
 	//

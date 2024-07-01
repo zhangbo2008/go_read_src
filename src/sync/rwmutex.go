@@ -36,8 +36,8 @@ type RWMutex struct {
 	w           Mutex        // held if there are pending writers
 	writerSem   uint32       // semaphore for writers to wait for completing readers
 	readerSem   uint32       // semaphore for readers to wait for completing writers
-	readerCount atomic.Int32 // number of pending readers
-	readerWait  atomic.Int32 // number of departing readers
+	readerCount atomic.Int32 // number of pending readers   //将要读的
+	readerWait  atomic.Int32 // number of departing readers //正在读的
 }
 
 const rwmutexMaxReaders = 1 << 30
@@ -60,7 +60,7 @@ const rwmutexMaxReaders = 1 << 30
 // It should not be used for recursive read locking; a blocked Lock
 // call excludes new readers from acquiring the lock. See the
 // documentation on the RWMutex type.
-func (rw *RWMutex) RLock() {
+func (rw *RWMutex) RLock() { //拿读的锁
 	if race.Enabled {
 		_ = rw.w.state
 		race.Disable()
@@ -93,7 +93,7 @@ func (rw *RWMutex) TryRLock() bool {
 			}
 			return false
 		}
-		if rw.readerCount.CompareAndSwap(c, c+1) {
+		if rw.readerCount.CompareAndSwap(c, c+1) { //c大于等于0,
 			if race.Enabled {
 				race.Enable()
 				race.Acquire(unsafe.Pointer(&rw.readerSem))

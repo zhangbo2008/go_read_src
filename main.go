@@ -1,15 +1,29 @@
 package main
 
+import (
+	_ "embed"
+	"fmt"
+	"math"
+	"unsafe"
+)
+
+//go:embed hello.txt
+var b []byte
+
 func main() {
+	fmt.Println(b)
+	var a = math.NaN()
+	print(a != a)
 
-	//...
-	// 不知道为啥拷出来
-	var i = 3333
-	println(i)
-	var a1 = &i
-	println(a1)
-	println(*a1)
+	var firstStoreInProgress byte
+	print(unsafe.Pointer(&firstStoreInProgress))
+	for i := 1; i <= 20; i++ {
+		n := i
 
+		fmt.Println(n, "===", uint32(-n)%uint32(n))
+	}
+	d := make(chan struct{})
+	print(d)
 }
 
 //go:noescape

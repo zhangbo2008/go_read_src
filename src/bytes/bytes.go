@@ -29,13 +29,15 @@ func Compare(a, b []byte) int {
 
 // explode splits s into a slice of UTF-8 sequences, one per Unicode code point (still slices of bytes),
 // up to a maximum of n byte slices. Invalid UTF-8 sequences are chopped into individual bytes.
-func explode(s []byte, n int) [][]byte {
+func explode(s []byte, n int) [][]byte { //s解析成utf-8编码的数组, 每一个utf-8编码是一个[]byte.
 	if n <= 0 || n > len(s) {
 		n = len(s)
 	}
-	a := make([][]byte, n)
+	// 创建一个长度为 n 的字节切片切片。
+
+	var a = make([][]byte, n)
 	var size int
-	na := 0
+	var na = 0
 	for len(s) > 0 {
 		if na+1 >= n {
 			a[na] = s

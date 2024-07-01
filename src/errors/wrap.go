@@ -17,11 +17,11 @@ import (
 func Unwrap(err error) error {
 	u, ok := err.(interface {
 		Unwrap() error
-	})
+	}) //err强转成一个接口
 	if !ok {
 		return nil
 	}
-	return u.Unwrap()
+	return u.Unwrap() //如果转成功了. 就调用接口的unwarp函数.
 }
 
 // Is reports whether any error in err's tree matches target.
@@ -52,7 +52,7 @@ func Is(err, target error) bool {
 
 func is(err, target error, targetComparable bool) bool {
 	for {
-		if targetComparable && err == target {
+		if targetComparable && err == target { // ==优先级是大于 &&的.
 			return true
 		}
 		if x, ok := err.(interface{ Is(error) bool }); ok && x.Is(target) {
@@ -65,7 +65,7 @@ func is(err, target error, targetComparable bool) bool {
 				return false
 			}
 		case interface{ Unwrap() []error }:
-			for _, err := range x.Unwrap() {
+			for _, err := range x.Unwrap() { //遍历解开的之后是一个数组, 遍历数组里面每一个错误.有一个等于target就算匹配成功.
 				if is(err, target, targetComparable) {
 					return true
 				}

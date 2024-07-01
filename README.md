@@ -782,6 +782,7 @@ src里面从依赖最少得开始看:
 
 # src\strings\search.go
 	 bm算法的实现.用于批量的替换字符串.每一次替换很多组字符串对.
+	 bm算法来找一个字符串的子串匹配. 这个算法比kmp一般快3倍.
 
 # src\strings\strings.go
 	 一些字符串基本操作
@@ -997,6 +998,81 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 
 		# src\sync\cond.go
 		  大部分场景下使用 channel 是比 sync.Cond方便的。不过我们要注意到，sync.Cond 提供了 Broadcast 方法，可以通知所有的等待者。想利用 channel 实现这个方法还是不容易的。我想这应该是 sync.Cond 唯一有用武之地的地方。
+			这里面的check() 函数是一个经典的nocopy实现,如果不理解以后可以直接复制这段代码用作自己结构体nocopy的实现.如果理解了也可以自己根据自己需要进行改造.
+
+		# src\sync\poolqueue.go
+			单生产者,多消费者模型.
+		# src\sync\pool.go
+			涉及比较多的底层.了解go的GMP模型 https://cloud.tencent.com/developer/article/2409305
+		# src\sync\rwmutex.go
+		# src\sync\waitgroup.go
+		  这些都涉及底层的runtime库包.可以先留着.
+		# src\arena\arena.go
+			一块内存的同时申请和释放.
+		# src\bufio\bufio.go
+			reader writer readwriter三个类型,分别里面有一个buf用来维护读写缓存.
+		# src\bufio\scan.go
+			提供了一个比reader更方便的读取文本的类,可以读取之后,进行分割.
+			创建scanner只需要提供一个io.Reader即可.
+		# src\bytes\bytes.go
+			字符串的一些方法
+		# src\bytes\reader.go
+		  读写方法
+		# src\bytes\buffer.go
+			字符串buffer提供读写
+		# src\cmp\cmp.go
+			比较
+		# src\compress\bzip2\move_to_front.go
+			移动byte的算法
+
+		# src\compress\bzip2\bit_reader.go
+			这里我们要区分计算机存储的概念, 这里面bit 是比特位 是一个01表示.  byte是比特是8位二进制 byte=8bits.这里面读取更底层是按照位来读取的.
+		# src\compress\bzip2\bzip2.go
+			这是字符串的压缩算法了.
+			compress库包里面其他算法实现也都是类似实现编解码.
+		# src\container\heap\heap.go
+			堆的实现.他的定义是使用接口定义的.
+			type Interface interface {
+				sort.Interface
+				Push(x any) // add x as element Len()
+				Pop() any   // remove and return element Len() - 1.
+			}
+			凡是实现了这3个方法的类都可以把他视作heap.从而heap更广义,比其他语言使用更方便, 比如go里面heap就是依赖数组定义的,go不做这个限制.只需要有sort, push,pop方法的类即可做heap.
+		# src\container\list\list.go
+			双向链表
+		# src\container\ring\ring.go
+			双向环形链表.创建时候指定大小,数据是一个圈.
+		# src\context\context.go
+			cancelCtx是里面的核心类.通过通道来控制上下文的关闭.
+		# src\crypto
+			加密相关算法
+		# src\database\sql\driver\driver.go
+			定义数据库连接的接口.
+		# src\database\sql\driver\types.go
+			go类型和数据库里面数据类型转化.
+
+		# src\embed\embed.go
+			//go:embed 使用这个标识可以把一个静态文件变成一个变量.
+			静态资源访问没有 io 操作，速度会非常快。
+		# src\errors\errors.go
+			本质是字符串.
+		# src\errors\join.go
+			把一组errors拼接成一个长的error字符串
+		# src\errors\wrap.go
+			errors多维数组里面进行错误匹配,搜索.
+		# src\expvar\expvar.go
+			提供几个类用于当全局变量.里面的操作都是atomic的.保证并发安全.
+		# src\fmt\print.go
+			根据format刷新字符串格式,该转换类型的转换类型,转成能打印的字符串,然后交给io处理.
+
+
+
+
+
+
+
+
+
 
 
 

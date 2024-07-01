@@ -33,7 +33,7 @@ func NaN() float64 { return Float64frombits(uvnan) }
 // IsNaN reports whether f is an IEEE 754 “not-a-number” value.
 func IsNaN(f float64) (is bool) {
 	// IEEE 754 says that only NaNs satisfy f != f.
-	// To avoid the floating-point hardware, could use:
+	// To avoid the floating-point hardware, could use:  //这是浮点数硬件决定的.  只有nan 符合 自己不等于自己这个性质.
 	//	x := Float64bits(f);
 	//	return uint32(x>>shift)&mask == mask && x != uvinf && x != uvneginf
 	return f != f

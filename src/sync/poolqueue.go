@@ -16,17 +16,17 @@ import (
 // It has the added feature that it nils out unused slots to avoid
 // unnecessary retention of objects. This is important for sync.Pool,
 // but not typically a property considered in the literature.
-type poolDequeue struct {
+type poolDequeue struct { // 无锁的单生产者多消费者队列.//注意这里面生产者只有一个,他的操作可以push pop from head,   消费者可以多个并发, 只能pop from tail// 所以下面代码可以看到pop都是元操作,和元指针!!!!!!!!!!!!
 	// headTail packs together a 32-bit head index and a 32-bit
 	// tail index. Both are indexes into vals modulo len(vals)-1.
 	//
-	// tail = index of oldest data in queue
+	// tail = index of oldest data in queue      //注意这里面tail表示最老的数据//head表示即将新插入数据的索引. 这些索引要mod (len(vals)-1) 才能换算成vals里面的index
 	// head = index of next slot to fill
 	//
 	// Slots in the range [tail, head) are owned by consumers.
 	// A consumer continues to own a slot outside this range until
 	// it nils the slot, at which point ownership passes to the
-	// producer.
+	// producer. //注意只有 [tail, head)这个范围的才是consumer合法的取值范围.
 	//
 	// The head index is stored in the most-significant bits so
 	// that we can atomically add to it and the overflow is
@@ -41,7 +41,7 @@ type poolDequeue struct {
 	// index has moved beyond it and typ has been set to nil. This
 	// is set to nil atomically by the consumer and read
 	// atomically by the producer.
-	vals []eface
+	vals []eface //buffer大小一定是2的倍数, 因为后面需要用这个算mask
 }
 
 type eface struct {
@@ -55,21 +55,21 @@ const dequeueBits = 32
 // This must be at most (1<<dequeueBits)/2 because detecting fullness
 // depends on wrapping around the ring buffer without wrapping around
 // the index. We divide by 4 so this fits in an int on 32-bit.
-const dequeueLimit = (1 << dequeueBits) / 4
+const dequeueLimit = (1 << dequeueBits) / 4 //队列的最大长度. 1<<32再/4=  bin(01....1), 31个1.正好就是int能表达的最大正整数.
 
 // dequeueNil is used in poolDequeue to represent interface{}(nil).
 // Since we use nil to represent empty slots, we need a sentinel value
 // to represent nil.
 type dequeueNil *struct{}
 
-func (d *poolDequeue) unpack(ptrs uint64) (head, tail uint32) {
+func (d *poolDequeue) unpack(ptrs uint64) (head, tail uint32) { //给一个ptrs64位, 解析成head和tail的两个32位数.
 	const mask = 1<<dequeueBits - 1
-	head = uint32((ptrs >> dequeueBits) & mask)
-	tail = uint32(ptrs & mask)
+	head = uint32((ptrs >> dequeueBits) & mask) //头32位是head
+	tail = uint32(ptrs & mask)                  //后32位是tail
 	return
 }
 
-func (d *poolDequeue) pack(head, tail uint32) uint64 {
+func (d *poolDequeue) pack(head, tail uint32) uint64 { //上面函数的逆
 	const mask = 1<<dequeueBits - 1
 	return (uint64(head) << dequeueBits) |
 		uint64(tail&mask)
@@ -80,11 +80,11 @@ func (d *poolDequeue) pack(head, tail uint32) uint64 {
 func (d *poolDequeue) pushHead(val any) bool {
 	ptrs := d.headTail.Load()
 	head, tail := d.unpack(ptrs)
-	if (tail+uint32(len(d.vals)))&(1<<dequeueBits-1) == head {
+	if (tail+uint32(len(d.vals)))&(1<<dequeueBits-1) == head { // 注意四则运算优先级大于左移右移.//
 		// Queue is full.
 		return false
 	}
-	slot := &d.vals[head&uint32(len(d.vals)-1)]
+	slot := &d.vals[head&uint32(len(d.vals)-1)] //根据定义,要mod一下.因为是2的倍数,所以等价于做位and
 
 	// Check if the head slot has been released by popTail.
 	typ := atomic.LoadPointer(&slot.typ)
@@ -98,11 +98,11 @@ func (d *poolDequeue) pushHead(val any) bool {
 	if val == nil {
 		val = dequeueNil(nil)
 	}
-	*(*any)(unsafe.Pointer(slot)) = val
+	*(*any)(unsafe.Pointer(slot)) = val // 数据放到slot里面.
 
 	// Increment head. This passes ownership of slot to popTail
 	// and acts as a store barrier for writing the slot.
-	d.headTail.Add(1 << dequeueBits)
+	d.headTail.Add(1 << dequeueBits) //head++
 	return true
 }
 
@@ -124,7 +124,7 @@ func (d *poolDequeue) popHead() (any, bool) {
 		// slot.
 		head--
 		ptrs2 := d.pack(head, tail)
-		if d.headTail.CompareAndSwap(ptrs, ptrs2) {
+		if d.headTail.CompareAndSwap(ptrs, ptrs2) { //只有cas操作成功了.我们才break.这是因为并发, 我们的headTail值跟之前可能有变化了.如果变化了.说明其他进程操作了.那么我们重新计算这个索引值.只有稳定了.我们后续才得到slot.
 			// We successfully took back slot.
 			slot = &d.vals[head&uint32(len(d.vals)-1)]
 			break
@@ -137,7 +137,7 @@ func (d *poolDequeue) popHead() (any, bool) {
 	}
 	// Zero the slot. Unlike popTail, this isn't racing with
 	// pushHead, so we don't need to be careful here.
-	*slot = eface{}
+	*slot = eface{} //清空这个slot的内容.
 	return val, true
 }
 
@@ -177,7 +177,7 @@ func (d *poolDequeue) popTail() (any, bool) {
 	//
 	// We write to val first and then publish that we're done with
 	// this slot by atomically writing to typ.
-	slot.val = nil
+	slot.val = nil // 这两行等价于*slot = eface{},但是这里进行元处理,保证并发.
 	atomic.StorePointer(&slot.typ, nil)
 	// At this point pushHead owns the slot.
 
@@ -201,7 +201,7 @@ type poolChain struct {
 	tail *poolChainElt
 }
 
-type poolChainElt struct {
+type poolChainElt struct { // pooldequeue结构架,再加上双向指针.//所以区别都不大.
 	poolDequeue
 
 	// next and prev link to the adjacent poolChainElts in this
@@ -217,6 +217,7 @@ type poolChainElt struct {
 	next, prev *poolChainElt
 }
 
+// 这里要设置一个指针的值,所以改的是二级指针.
 func storePoolChainElt(pp **poolChainElt, v *poolChainElt) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(pp)), unsafe.Pointer(v))
 }
@@ -225,6 +226,7 @@ func loadPoolChainElt(pp **poolChainElt) *poolChainElt {
 	return (*poolChainElt)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(pp))))
 }
 
+// 三个操作方法.
 func (c *poolChain) pushHead(val any) {
 	d := c.head
 	if d == nil {

@@ -76,6 +76,7 @@ type poolLocal struct {
 }
 
 // from runtime
+//
 //go:linkname runtime_randn runtime.randn
 func runtime_randn(n uint32) uint32
 
@@ -196,7 +197,7 @@ func (p *Pool) getSlow(pid int) any {
 // pin pins the current goroutine to P, disables preemption and
 // returns poolLocal pool for the P and the P's id.
 // Caller must call runtime_procUnpin() when done with the pool.
-func (p *Pool) pin() (*poolLocal, int) {
+func (p *Pool) pin() (*poolLocal, int) { // 使用抢占模式来返回一个poolLocal 池子来给p用.
 	// Check whether p is nil to get a panic.
 	// Otherwise the nil dereference happens while the m is pinned,
 	// causing a fatal error rather than a panic.
@@ -284,14 +285,14 @@ func init() {
 	runtime_registerPoolCleanup(poolCleanup)
 }
 
-func indexLocal(l unsafe.Pointer, i int) *poolLocal {
+func indexLocal(l unsafe.Pointer, i int) *poolLocal { //返回l后面poollocal的索引为i的元素.
 	lp := unsafe.Pointer(uintptr(l) + uintptr(i)*unsafe.Sizeof(poolLocal{}))
 	return (*poolLocal)(lp)
 }
 
 // Implemented in runtime.
 func runtime_registerPoolCleanup(cleanup func())
-func runtime_procPin() int
+func runtime_procPin() int //返回用的处理器核心的号
 func runtime_procUnpin()
 
 // The below are implemented in runtime/internal/atomic and the

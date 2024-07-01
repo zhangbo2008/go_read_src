@@ -80,7 +80,7 @@ in a command-line interface. The methods of [FlagSet] are
 analogous to the top-level functions for the command-line
 flag set.
 */
-package flag
+package flag //这个库包可以让编译后的程序带上 参数, 参数可以传入程序.也就是命令行参数.
 
 import (
 	"encoding"

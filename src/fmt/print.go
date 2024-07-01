@@ -1016,6 +1016,7 @@ func (p *pp) missingArg(verb rune) {
 	p.buf.writeString(missingString)
 }
 
+// a根据format的格式刷格式, 结果放到p.buf
 func (p *pp) doPrintf(format string, a []any) {
 	end := len(format)
 	argNum := 0         // we process one argument per non-trivial format
@@ -1029,7 +1030,7 @@ formatLoop:
 			i++
 		}
 		if i > lasti {
-			p.buf.writeString(format[lasti:i])
+			p.buf.writeString(format[lasti:i]) //打印了上次的i往后的字符,这些字符没%号.
 		}
 		if i >= end {
 			// done processing format string

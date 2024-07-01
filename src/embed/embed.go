@@ -215,7 +215,7 @@ var (
 
 // A file is a single file in the FS.
 // It implements fs.FileInfo and fs.DirEntry.
-type file struct {
+type file struct { //一个文件是名字,路径,和哈希值.
 	// The compiler knows the layout of this struct.
 	// See cmd/compile/internal/staticdata's WriteEmbed.
 	name string

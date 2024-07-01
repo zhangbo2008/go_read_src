@@ -259,7 +259,7 @@ type WriterAt interface {
 // ReadByte provides an efficient interface for byte-at-time
 // processing. A [Reader] that does not implement  ByteReader
 // can be wrapped using bufio.NewReader to add this method.
-type ByteReader interface {
+type ByteReader interface { //读取一个byte
 	ReadByte() (byte, error)
 }
 

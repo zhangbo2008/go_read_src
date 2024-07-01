@@ -7,7 +7,7 @@ package bzip2
 import "sort"
 
 // A huffmanTree is a binary tree which is navigated, bit-by-bit to reach a
-// symbol.
+// symbol. //哈夫曼树, 每一个节点都有权重. 构造一个树让他权重大的都在上面.
 type huffmanTree struct {
 	// nodes contains all the non-leaf nodes in the tree. nodes[0] is the
 	// root of the tree and nextNode contains the index of the next element
@@ -32,7 +32,7 @@ type huffmanNode struct {
 const invalidNodeValue = 0xffff
 
 // Decode reads bits from the given bitReader and navigates the tree until a
-// symbol is found.
+// symbol is found. //传入一个bitreader, 从bitreader往外读取字符串,如果读到字符串在哈夫曼树里面那么就暂停.
 func (t *huffmanTree) Decode(br *bitReader) (v uint16) {
 	nodeIndex := uint16(0) // node 0 is the root of the tree.
 

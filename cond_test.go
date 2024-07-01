@@ -8,6 +8,9 @@ import (
 )
 
 func TestCond(t *testing.T) {
+	var a = 3
+	b := &a
+	print(b)
 	var locker = new(sync.Mutex)
 	var cond = sync.NewCond(locker)
 	for i := 0; i < 10; i++ {

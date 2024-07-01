@@ -24,7 +24,7 @@ func newMTFDecoder(symbols []byte) moveToFrontDecoder {
 
 // newMTFDecoderWithRange creates a move-to-front decoder with an initial
 // symbol list of 0...n-1.
-func newMTFDecoderWithRange(n int) moveToFrontDecoder {
+func newMTFDecoderWithRange(n int) moveToFrontDecoder { //生成一个结果0到n-1的字符串
 	if n > 256 {
 		panic("newMTFDecoderWithRange: cannot have > 256 symbols")
 	}
@@ -36,7 +36,7 @@ func newMTFDecoderWithRange(n int) moveToFrontDecoder {
 	return moveToFrontDecoder(m)
 }
 
-func (m moveToFrontDecoder) Decode(n int) (b byte) {
+func (m moveToFrontDecoder) Decode(n int) (b byte) { // 把第n个字符放到开头,其他的往后移.
 	// Implement move-to-front with a simple copy. This approach
 	// beats more sophisticated approaches in benchmarking, probably
 	// because it has high locality of reference inside of a

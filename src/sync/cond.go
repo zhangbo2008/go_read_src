@@ -98,9 +98,9 @@ type copyChecker uintptr
 
 func (c *copyChecker) check() { // 用来防止复制的.
 	// Check if c has been copied in three steps:
-	// 1. The first comparison is the fast-path. If c has been initialized and not copied, this will return immediately. Otherwise, c is either not initialized, or has been copied.  因为我们调用wait时候会触发这个check, 如果复制了.那么105行会改变c的值.从而就能检测出来cond被复制了. 比如 cond1=cond  cond.checker=0x0, cond1.checker=0x0,然后我们cond.wait()从而云新都105行让 cond.checker=0xffffcc(举例子), 而cond1.wait()也运行到105行,那么就会触发 0xffffcc!=0x0的判断. 具体来说这里:uintptr(*c) 是c指向的内容解析成数字, uintptr(unsafe.Pointer(c))是c本身也就是c自己这个数字解析成数字. 这里*一个unitptr是把他当成指针来取这个指针地址里面存的值.
+	// 1. The first comparison is the fast-path. If c has been initialized and not copied, this will return immediately. Otherwise, c is either not initialized, or has been copied.
 	// 2. Ensure c is initialized. If the CAS succeeds, we're done. If it fails, c was either initialized concurrently and we simply lost the race, or c has been copied.
-	// 3. Do step 1 again. Now that c is definitely initialized, if this fails, c was copied.
+	// 3. Do step 1 again. Now that c is definitely initialized, if this fails, c was copied.            //104行, 第一次check函数调用进来c是*0,一个指向0的指针. uintptr(unsafe.Pointer(c)) [这里面的语法不熟悉的请参考unsafe.go:50行的注释,也就是unitptr的第二种使用方式]是这个指针的地址,所以显然不等于, 所以继续走 后续的atomic运算.这个运算当c=*0时候,比如c本身表示数字是0xfff, 那么atomic走完c=*0xfff//第二次check函数调用c=*0xffff,因为c已经指向自己本身地址的数字了.所以uintptr(*c) != uintptr(unsafe.Pointer(c)) 是false.所以就保证了正常不copy模式不会触发panic. //  如果c复制了.那么一个进程会改c的值,一个进程c还是0x0, 那么就会触发panic.//这个代码是一个很好的nocopy的实现.
 	if uintptr(*c) != uintptr(unsafe.Pointer(c)) &&
 		!atomic.CompareAndSwapUintptr((*uintptr)(c), 0, uintptr(unsafe.Pointer(c))) &&
 		uintptr(*c) != uintptr(unsafe.Pointer(c)) {

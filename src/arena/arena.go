@@ -40,7 +40,7 @@ import (
 // it is no longer referenced, so it must be kept alive (see runtime.KeepAlive)
 // until any memory allocated from it is no longer needed.
 //
-// An Arena must never be used concurrently by multiple goroutines.
+// An Arena must never be used concurrently by multiple goroutines.// arena表示一块内存,一起申请和释放, 这样效率高, 但是不要在并发中使用.
 type Arena struct {
 	a unsafe.Pointer
 }

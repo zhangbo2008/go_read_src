@@ -33,7 +33,7 @@ func newBitReader(r io.Reader) bitReader {
 // ReadBits64 reads the given number of bits and returns them in the
 // least-significant part of a uint64. In the event of an error, it returns 0
 // and the error can be obtained by calling bitReader.Err().
-func (br *bitReader) ReadBits64(bits uint) (n uint64) {
+func (br *bitReader) ReadBits64(bits uint) (n uint64) { //读取bits这么多位的字符. 这里我们要区分计算机存储的概念, 这里面bit 是比特位 是一个01表示.  byte是比特是8位二进制 byte=8bits
 	for bits > br.bits {
 		b, err := br.r.ReadByte()
 		if err == io.EOF {
@@ -43,8 +43,8 @@ func (br *bitReader) ReadBits64(bits uint) (n uint64) {
 			br.err = err
 			return 0
 		}
-		br.n <<= 8
-		br.n |= uint64(b)
+		br.n <<= 8        //每读一个字符,需要8biyte来占用
+		br.n |= uint64(b) //用or来存这个值. 所以br.n能存下所有读到的byte.
 		br.bits += 8
 	}
 
@@ -62,8 +62,8 @@ func (br *bitReader) ReadBits64(bits uint) (n uint64) {
 	//
 	// The next line right shifts the desired bits into the
 	// least-significant places and masks off anything above.
-	n = (br.n >> (br.bits - bits)) & ((1 << bits) - 1)
-	br.bits -= bits
+	n = (br.n >> (br.bits - bits)) & ((1 << bits) - 1) //用来对n做精简, 得到least-significant
+	br.bits -= bits                                    // 索引归0, 不影响下次字符读取.
 	return
 }
 
