@@ -307,7 +307,7 @@ func Len(x uint) int {
 }
 
 // Len8 returns the minimum number of bits required to represent x; the result is 0 for x == 0.
-func Len8(x uint8) int {
+func Len8(x uint8) int { // 这个函数,输入一个十进制数x,8bit,所以是0到255之间,len8tab这个表返回的就是这个0到255的数占用的bit数.从0个bite到8个bite.
 	return int(len8tab[x]) // len8tab 是一个16*16个字符的字符串. x是索引, len8tab[x]是十进制数字x对应的bit长度.
 }
 
@@ -334,7 +334,7 @@ func Len32(x uint32) (n int) {
 }
 
 // Len64 returns the minimum number of bits required to represent x; the result is 0 for x == 0.
-func Len64(x uint64) (n int) {
+func Len64(x uint64) (n int) { //这个好理解, 每次x大于一个2的次幂, 就n加上, 然后x右移.一直移动到x最后8bit, 最后8bit,查表. 所以整个函数返回的是, 一个十进制的数, 最小需要多少bit来保存.
 	if x >= 1<<32 {
 		x >>= 32
 		n = 32

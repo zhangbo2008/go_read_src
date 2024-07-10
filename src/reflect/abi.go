@@ -28,7 +28,7 @@ import (
 // that uses text/template). The values that are currently
 // commented out there should be the actual values once
 // we're ready to use the register ABI everywhere.
-var (
+var ( //各类寄存器数量.
 	intArgRegs   = abi.IntArgRegs
 	floatArgRegs = abi.FloatArgRegs
 	floatRegSize = uintptr(abi.EffectiveFloatRegSize)
@@ -37,7 +37,7 @@ var (
 // abiStep represents an ABI "instruction." Each instruction
 // describes one part of how to translate between a Go value
 // in memory and a call frame.
-type abiStep struct {
+type abiStep struct { //代表abi一条指令.
 	kind abiStepKind
 
 	// offset and size together describe a part of a Go value
@@ -72,7 +72,7 @@ type abiSeq struct {
 	//
 	// The instructions are grouped together by whole arguments,
 	// with the starting index for the instructions
-	// of the i'th Go value available in valueStart.
+	// of the i'th Go value available in valueStart.//valueStart代表指令集开始的每一个索引
 	//
 	// For instance, if this abiSeq represents 3 arguments
 	// passed to a function, then the 2nd argument's steps
@@ -89,7 +89,7 @@ type abiSeq struct {
 	iregs, fregs int     // registers used
 }
 
-func (a *abiSeq) dump() {
+func (a *abiSeq) dump() { //打印信息
 	for i, p := range a.steps {
 		println("part", i, p.kind, p.offset, p.size, p.stkOff, p.ireg, p.freg)
 	}
@@ -106,7 +106,7 @@ func (a *abiSeq) dump() {
 // stepsForValue returns the ABI instructions for translating
 // the i'th Go argument or return value represented by this
 // abiSeq to the Go ABI.
-func (a *abiSeq) stepsForValue(i int) []abiStep {
+func (a *abiSeq) stepsForValue(i int) []abiStep { //第i个指令集. 返回一个step数组.
 	s := a.valueStart[i]
 	var e int
 	if i == len(a.valueStart)-1 {
@@ -125,7 +125,7 @@ func (a *abiSeq) addArg(t *abi.Type) *abiStep {
 	// We'll always be adding a new value, so do that first.
 	pStart := len(a.steps)
 	a.valueStart = append(a.valueStart, pStart)
-	if t.Size() == 0 {
+	if t.Size() == 0 { // 插入一个大小为0的,只需要调整栈的空间对齐即可.
 		// If the size of the argument type is zero, then
 		// in order to degrade gracefully into ABI0, we need
 		// to stack-assign this type. The reason is that

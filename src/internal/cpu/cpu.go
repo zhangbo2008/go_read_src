@@ -12,7 +12,7 @@ package cpu
 var DebugOptions bool
 
 // CacheLinePad is used to pad structs to avoid false sharing.
-type CacheLinePad struct{ _ [CacheLinePadSize]byte }
+type CacheLinePad struct{ _ [CacheLinePadSize]byte } //填充结构体.一些空byte
 
 // CacheLineSize is the CPU's assumed cache line size.
 // There is currently no runtime detection of the real cache line size
@@ -22,7 +22,7 @@ var CacheLineSize uintptr = CacheLinePadSize
 // The booleans in X86 contain the correspondingly named cpuid feature bit.
 // HasAVX and HasAVX2 are only set if the OS does support XMM and YMM registers
 // in addition to the cpuid feature bit being set.
-// The struct is padded to avoid false sharing.
+// The struct is padded to avoid false sharing. //下面是各个芯片是否有一些功能的参数.
 var X86 struct {
 	_            CacheLinePad
 	HasAES       bool

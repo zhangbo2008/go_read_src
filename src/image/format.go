@@ -25,7 +25,7 @@ type format struct {
 // Formats is the list of registered formats.
 var (
 	formatsMu     sync.Mutex
-	atomicFormats atomic.Value
+	atomicFormats atomic.Value //用来维护图片的格式.
 )
 
 // RegisterFormat registers an image format for use by [Decode].
@@ -34,9 +34,9 @@ var (
 // string can contain "?" wildcards that each match any one byte.
 // [Decode] is the function that decodes the encoded image.
 // [DecodeConfig] is the function that decodes just its configuration.
-func RegisterFormat(name, magic string, decode func(io.Reader) (Image, error), decodeConfig func(io.Reader) (Config, error)) {
-	formatsMu.Lock()
-	formats, _ := atomicFormats.Load().([]format)
+func RegisterFormat(name, magic string, decode func(io.Reader) (Image, error), decodeConfig func(io.Reader) (Config, error)) { //注册图片的格式.
+	formatsMu.Lock()                              //锁上保证安全.
+	formats, _ := atomicFormats.Load().([]format) //读取到值, 然后转化为[]format类型. 接口的转化方式是在后面进行.(类型) ,这里any是一个接口. 也就是interface{}
 	atomicFormats.Store(append(formats, format{name, magic, decode, decodeConfig}))
 	formatsMu.Unlock()
 }

@@ -45,7 +45,7 @@ func main() {
 		fmt.Fprintf(&buf, "//go:build %s\n\n", target) // must explicitly include target for bootstrapping purposes
 		fmt.Fprintf(&buf, "package goarch\n\n")
 		fmt.Fprintf(&buf, "const GOARCH = `%s`\n\n", target)
-		for _, goarch := range goarches {
+		for _, goarch := range goarches { //写入这些0,1变量.
 			value := 0
 			if goarch == target {
 				value = 1

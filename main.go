@@ -1,31 +1,29 @@
 package main
 
-import (
-	_ "embed"
-	"fmt"
-	"math"
-	"unsafe"
-)
-
-//go:embed hello.txt
-var b []byte
-
 func main() {
-	fmt.Println(b)
-	var a = math.NaN()
-	print(a != a)
 
-	var firstStoreInProgress byte
-	print(unsafe.Pointer(&firstStoreInProgress))
-	for i := 1; i <= 20; i++ {
-		n := i
+	c := []byte("daf11")
+	a := c[:3]
+	b := c[:4]
 
-		fmt.Println(n, "===", uint32(-n)%uint32(n))
+	println(&a[0]) // 0x17a249
+	println(&b[0]) //0x17a249
+	println(&a)
+	println(&b)
+
+	x := []string{"212", "af"}
+	m := make(map[string]int)
+	for _, s := range x {
+		if c, ok := m[s]; c > -2 {
+			print(ok)
+			println(m[s])
+			m[s] = c - 1
+		}
 	}
-	d := make(chan struct{})
-	print(d)
-}
+	var b1 interface{}
+	b1 = 3
+	var b2 = b1.(int)
+	print(b2 + 3)
+	print(1)
 
-//go:noescape
-func Sum(x, y int) int
-func Sum2(x, y int) int
+}

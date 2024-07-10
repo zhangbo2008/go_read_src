@@ -55,7 +55,7 @@ package sort
 //		})
 //		fmt.Printf("Your number is %d.\n", answer)
 //	}
-func Search(n int, f func(int) bool) int {
+func Search(n int, f func(int) bool) int { //二分法搜索0到n-1那个符合f(i)=true
 	// Define f(-1) == false and f(n) == true.
 	// Invariant: f(i-1) == false, f(j) == true.
 	i, j := 0, n
@@ -79,7 +79,7 @@ func Search(n int, f func(int) bool) int {
 //
 // To permit binary search, Find requires that cmp(i) > 0 for a leading
 // prefix of the range, cmp(i) == 0 in the middle, and cmp(i) < 0 for
-// the final suffix of the range. (Each subrange could be empty.)
+// the final suffix of the range. (Each subrange could be empty.)// 要求前缀cmp>0,中部=0, 尾部<0
 // The usual way to establish this condition is to interpret cmp(i)
 // as a comparison of a desired target value t against entry i in an
 // underlying indexed data structure x, returning <0, 0, and >0

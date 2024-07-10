@@ -10,7 +10,7 @@ package abi
 
 import "unsafe"
 
-func FuncPCABI0(f interface{}) uintptr {
+func FuncPCABI0(f interface{}) uintptr { //计算f作为指针的下一个指针.
 	words := (*[2]unsafe.Pointer)(unsafe.Pointer(&f))
 	return *(*uintptr)(unsafe.Pointer(words[1]))
 }

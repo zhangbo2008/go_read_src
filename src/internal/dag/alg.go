@@ -5,8 +5,8 @@
 package dag
 
 // Transpose reverses all edges in g.
-func (g *Graph) Transpose() {
-	old := g.edges
+func (g *Graph) Transpose() { //把整个图进行转置, 也就是箭头方向全逆转.
+	old := g.edges //保存旧的
 
 	g.edges = make(map[string]map[string]bool)
 	for _, n := range g.Nodes {
@@ -15,13 +15,13 @@ func (g *Graph) Transpose() {
 
 	for from, tos := range old {
 		for to := range tos {
-			g.edges[to][from] = true
+			g.edges[to][from] = true //逆转后的新的.
 		}
 	}
 }
 
 // Topo returns a topological sort of g. This function is deterministic.
-func (g *Graph) Topo() []string {
+func (g *Graph) Topo() []string { //返回g的拓扑排序. 返回一个数组
 	topo := make([]string, 0, len(g.Nodes))
 	marks := make(map[string]bool)
 

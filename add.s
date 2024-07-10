@@ -1,3 +1,8 @@
+
+
+
+
+
 TEXT ·Sum(SB), $0-8
     MOVQ x+0(FP), AX  // 将第一个参数 x 放入 AX
     MOVQ y+8(FP), BX  // 将第二个参数 y 放入 BX

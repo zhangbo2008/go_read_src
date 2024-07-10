@@ -18,7 +18,7 @@ import (
 // RegArgs also contains additional space to hold pointers
 // when it may not be safe to keep them only in the integer
 // register space otherwise.
-type RegArgs struct {
+type RegArgs struct { //这个类用来刻画寄存器的情况.
 	// Values in these slots should be precisely the bit-by-bit
 	// representation of how they would appear in a register.
 	//
@@ -27,7 +27,7 @@ type RegArgs struct {
 	// directly represented, but some architectures treat narrow
 	// width floating point values specially (e.g. they're promoted
 	// first, or they need to be NaN-boxed).
-	Ints   [IntArgRegs]uintptr  // untyped integer registers
+	Ints   [IntArgRegs]uintptr  // untyped integer registers //记录所有整数寄存器的值. 是一个数组.
 	Floats [FloatArgRegs]uint64 // untyped float registers
 
 	// Fields above this point are known to assembly.
@@ -35,7 +35,7 @@ type RegArgs struct {
 	// Ptrs is a space that duplicates Ints but with pointer type,
 	// used to make pointers passed or returned  in registers
 	// visible to the GC by making the type unsafe.Pointer.
-	Ptrs [IntArgRegs]unsafe.Pointer
+	Ptrs [IntArgRegs]unsafe.Pointer //指针也用整数寄存器来保存.
 
 	// ReturnIsPtr is a bitmap that indicates which registers
 	// contain or will contain pointers on the return path from
@@ -44,7 +44,7 @@ type RegArgs struct {
 	ReturnIsPtr IntArgRegBitmap
 }
 
-func (r *RegArgs) Dump() {
+func (r *RegArgs) Dump() { // 用来打印寄存器的参数信息.
 	print("Ints:")
 	for _, x := range r.Ints {
 		print(" ", x)
@@ -70,7 +70,7 @@ func (r *RegArgs) Dump() {
 // This method is a helper for dealing with the endianness of different CPU
 // architectures, since sub-word-sized arguments in big endian architectures
 // need to be "aligned" to the upper edge of the register to be interpreted
-// by the CPU correctly.
+// by the CPU correctly.       //返回Int寄存器里面index是reg的地址, argSize :which is the size of the argument in bytes 这个变量在大端编码里面用来对齐. // goarch.PtrSize 是一个指针对象所占用的bit大小.
 func (r *RegArgs) IntRegArgAddr(reg int, argSize uintptr) unsafe.Pointer {
 	if argSize > goarch.PtrSize || argSize == 0 || argSize&(argSize-1) != 0 {
 		panic("invalid argSize")
@@ -79,15 +79,15 @@ func (r *RegArgs) IntRegArgAddr(reg int, argSize uintptr) unsafe.Pointer {
 	if goarch.BigEndian {
 		offset = goarch.PtrSize - argSize
 	}
-	return unsafe.Pointer(uintptr(unsafe.Pointer(&r.Ints[reg])) + offset)
+	return unsafe.Pointer(uintptr(unsafe.Pointer(&r.Ints[reg])) + offset) //返回一个通用指针类型的指针.
 }
 
 // IntArgRegBitmap is a bitmap large enough to hold one bit per
 // integer argument/return register.
-type IntArgRegBitmap [(IntArgRegs + 7) / 8]uint8
+type IntArgRegBitmap [(IntArgRegs + 7) / 8]uint8 //这个位图用来保存整数寄存器的使用情况.
 
 // Set sets the i'th bit of the bitmap to 1.
-func (b *IntArgRegBitmap) Set(i int) {
+func (b *IntArgRegBitmap) Set(i int) { //这个bitmap每8个字节用一个uint8来存.
 	b[i/8] |= uint8(1) << (i % 8)
 }
 
@@ -97,6 +97,6 @@ func (b *IntArgRegBitmap) Set(i int) {
 // on the reflectcall return path.
 //
 //go:nosplit
-func (b *IntArgRegBitmap) Get(i int) bool {
+func (b *IntArgRegBitmap) Get(i int) bool { //同上,不难理解代码.
 	return b[i/8]&(uint8(1)<<(i%8)) != 0
 }

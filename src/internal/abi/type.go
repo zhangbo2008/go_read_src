@@ -17,21 +17,21 @@ import (
 // or the functions in compiletype.go to access this type instead.
 // (TODO: this admonition applies to every type in this package.
 // Put it in some shared location?)
-type Type struct {
-	Size_       uintptr
-	PtrBytes    uintptr // number of (prefix) bytes in the type that can contain pointers
-	Hash        uint32  // hash of type; avoids computation in hash tables
-	TFlag       TFlag   // extra type information flags
+type Type struct { //type代表一个common类型.
+	Size_       uintptr // 类型的内存大小
+	PtrBytes    uintptr // number of (prefix) bytes in the type that can contain pointers 类型中可以包含指针的前缀字节数
+	Hash        uint32  // hash of type; avoids computation in hash tables // 类型的哈希值，以避免在哈希表中计算
+	TFlag       TFlag   // extra type information flags      // type flag 记作Tflag, 提供额外的类型标志位.
 	Align_      uint8   // alignment of variable with this type
-	FieldAlign_ uint8   // alignment of struct field with this type
+	FieldAlign_ uint8   // alignment of struct field with this type // 结构体字段的对齐方式
 	Kind_       uint8   // enumeration for C
 	// function for comparing objects of this type
 	// (ptr to object A, ptr to object B) -> ==?
-	Equal func(unsafe.Pointer, unsafe.Pointer) bool
+	Equal func(unsafe.Pointer, unsafe.Pointer) bool //这个字段表示一个函数用来比较这个类型的2个指针是否相等. 这个函数输入2个指针, 输出一个布尔.//函数底层是用一个指针地址来表示.
 	// GCData stores the GC type data for the garbage collector.
 	// If the KindGCProg bit is set in kind, GCData is a GC program.
 	// Otherwise it is a ptrmask bitmap. See mbitmap.go for details.
-	GCData    *byte
+	GCData    *byte   //gc类型是一个byte指针.
 	Str       NameOff // string form
 	PtrToThis TypeOff // type for pointer to this type, may be zero
 }
@@ -40,7 +40,7 @@ type Type struct {
 // The zero Kind is not a valid kind.
 type Kind uint
 
-const (
+const ( //所有的go的类型.
 	Invalid Kind = iota
 	Bool
 	Int
@@ -70,6 +70,7 @@ const (
 	UnsafePointer
 )
 
+// 下面定义的是type flag能表示的含义. type  flag是对type的一种补充.
 const (
 	// TODO (khr, drchase) why aren't these in TFlag?  Investigate, fix if possible.
 	KindDirectIface = 1 << 5
@@ -96,14 +97,14 @@ const (
 	//		structType
 	//		u UncommonType
 	//	}
-	//	u := &(*structTypeUncommon)(unsafe.Pointer(t)).u
+	//	u := &(*structTypeUncommon)(unsafe.Pointer(t)).u  //structTypeUncommon是一个普通类型再加上一个uncommon类型的字段.这个字段记作u
 	TFlagUncommon TFlag = 1 << 0
 
 	// TFlagExtraStar means the name in the str field has an
 	// extraneous '*' prefix. This is because for most types T in
 	// a program, the type *T also exists and reusing the str data
 	// saves binary size.
-	TFlagExtraStar TFlag = 1 << 1
+	TFlagExtraStar TFlag = 1 << 1 //表示字段都带一个前缀*
 
 	// TFlagNamed means the type has a name.
 	TFlagNamed TFlag = 1 << 2
@@ -116,7 +117,7 @@ const (
 	// versions of types with GC programs.
 	// These types need to be deallocated when the underlying object
 	// is freed.
-	TFlagUnrolledBitmap TFlag = 1 << 4
+	TFlagUnrolledBitmap TFlag = 1 << 4 //位图类型.
 )
 
 // NameOff is the offset to a name from moduledata.types.  See resolveNameOff in runtime.
@@ -129,7 +130,7 @@ type TypeOff int32
 type TextOff int32
 
 // String returns the name of k.
-func (k Kind) String() string {
+func (k Kind) String() string { // 输入类型, 返回他的字符串表示.
 	if int(k) < len(kindNames) {
 		return kindNames[k]
 	}
@@ -185,11 +186,11 @@ func (t *Type) IsDirectIface() bool {
 }
 
 func (t *Type) GcSlice(begin, end uintptr) []byte {
-	return unsafe.Slice(t.GCData, int(end))[begin:]
+	return unsafe.Slice(t.GCData, int(end))[begin:] // 可以看到slice函数传入的是指针类型, 传出的是[]类型
 }
 
 // Method on non-interface type
-type Method struct {
+type Method struct { //一个方法有4个字段: 名字, 类型, 类型调用的函数, 普通调用的函数
 	Name NameOff // name of method
 	Mtyp TypeOff // method type (without receiver)
 	Ifn  TextOff // fn used in interface call (one-word receiver)
@@ -204,18 +205,18 @@ type UncommonType struct {
 	PkgPath NameOff // import path; empty for built-in types like int, string
 	Mcount  uint16  // number of methods
 	Xcount  uint16  // number of exported methods
-	Moff    uint32  // offset from this uncommontype to [mcount]Method
+	Moff    uint32  // offset from this uncommontype to [mcount]Method // 偏移量到[mcount]Method这个数组上. 数组里面都是method.
 	_       uint32  // unused
 }
 
-func (t *UncommonType) Methods() []Method {
+func (t *UncommonType) Methods() []Method { //返回t的所有方法.
 	if t.Mcount == 0 {
 		return nil
 	}
-	return (*[1 << 16]Method)(addChecked(unsafe.Pointer(t), uintptr(t.Moff), "t.mcount > 0"))[:t.Mcount:t.Mcount]
+	return (*[1 << 16]Method)(addChecked(unsafe.Pointer(t), uintptr(t.Moff), "t.mcount > 0"))[:t.Mcount:t.Mcount] //我们206行看到偏移量得到之后是[mcount]Method的地址.  // [:a:b]这是全切片语法.表示len切到a, cap切到b.
 }
 
-func (t *UncommonType) ExportedMethods() []Method {
+func (t *UncommonType) ExportedMethods() []Method { //同上. exported是可以外界使用的函数.
 	if t.Xcount == 0 {
 		return nil
 	}
@@ -234,14 +235,14 @@ func addChecked(p unsafe.Pointer, x uintptr, whySafe string) unsafe.Pointer {
 }
 
 // Imethod represents a method on an interface type
-type Imethod struct {
+type Imethod struct { //接口的方法
 	Name NameOff // name of method
 	Typ  TypeOff // .(*FuncType) underneath
 }
 
 // ArrayType represents a fixed array type.
 type ArrayType struct {
-	Type
+	Type        //继承type类型.
 	Elem  *Type // array element type
 	Slice *Type // slice type
 	Len   uintptr
@@ -261,7 +262,7 @@ func (t *Type) Common() *Type {
 
 type ChanDir int
 
-const (
+const ( //这些个flag表示chan方向.
 	RecvDir    ChanDir = 1 << iota         // <-chan
 	SendDir                                // chan<-
 	BothDir            = RecvDir | SendDir // chan
@@ -269,7 +270,7 @@ const (
 )
 
 // ChanType represents a channel type
-type ChanType struct {
+type ChanType struct { // channel 比数组多维护一个dir属性.
 	Type
 	Elem *Type
 	Dir  ChanDir
@@ -290,7 +291,7 @@ func (t *Type) ChanDir() ChanDir {
 }
 
 // Uncommon returns a pointer to T's "uncommon" data if there is any, otherwise nil
-func (t *Type) Uncommon() *UncommonType {
+func (t *Type) Uncommon() *UncommonType { //返回一个指针的uncommon 数据部分.
 	if t.TFlag&TFlagUncommon == 0 {
 		return nil
 	}
@@ -349,7 +350,7 @@ func (t *Type) Uncommon() *UncommonType {
 }
 
 // Elem returns the element type for t if t is an array, channel, map, pointer, or slice, otherwise nil.
-func (t *Type) Elem() *Type {
+func (t *Type) Elem() *Type { //返回一个对象的elem属性.
 	switch t.Kind() {
 	case Array:
 		tt := (*ArrayType)(unsafe.Pointer(t))
@@ -449,10 +450,10 @@ type MapType struct {
 	Elem   *Type
 	Bucket *Type // internal type representing a hash bucket
 	// function for hashing keys (ptr to key, seed) -> hash
-	Hasher     func(unsafe.Pointer, uintptr) uintptr
-	KeySize    uint8  // size of key slot
-	ValueSize  uint8  // size of elem slot
-	BucketSize uint16 // size of bucket
+	Hasher     func(unsafe.Pointer, uintptr) uintptr //函数输入key指针和seed, 返回哈希值.
+	KeySize    uint8                                 // size of key slot
+	ValueSize  uint8                                 // size of elem slot
+	BucketSize uint16                                // size of bucket
 	Flags      uint32
 }
 
@@ -492,14 +493,15 @@ type SliceType struct {
 // directly follows the funcType (and possibly its uncommonType). So
 // a function type with one method, one input, and one output is:
 //
-//	struct {
-//		funcType
-//		uncommonType
-//		[2]*rtype    // [0] is in, [1] is out
-//	}
+//	 // 函数的入参,出参数据是进跟这个funcType类型的. 也就是下面的结构体.
+//		struct {
+//			funcType
+//			uncommonType
+//			[2]*rtype    // [0] is in, [1] is out
+//		}
 type FuncType struct {
 	Type
-	InCount  uint16
+	InCount  uint16 //入参数量
 	OutCount uint16 // top bit is set if last input parameter is ...
 }
 
@@ -520,7 +522,7 @@ func (t *FuncType) Out(i int) *Type {
 }
 
 func (t *FuncType) InSlice() []*Type {
-	uadd := unsafe.Sizeof(*t)
+	uadd := unsafe.Sizeof(*t) //根据495行, 入参偏移量就是t的sizeof
 	if t.TFlag&TFlagUncommon != 0 {
 		uadd += unsafe.Sizeof(UncommonType{})
 	}
@@ -529,8 +531,9 @@ func (t *FuncType) InSlice() []*Type {
 	}
 	return (*[1 << 16]*Type)(addChecked(unsafe.Pointer(t), uadd, "t.inCount > 0"))[:t.InCount:t.InCount]
 }
+
 func (t *FuncType) OutSlice() []*Type {
-	outCount := uint16(t.NumOut())
+	outCount := uint16(t.NumOut()) //根据495行的注释. 出参的偏移量.是这个.
 	if outCount == 0 {
 		return nil
 	}
@@ -538,7 +541,7 @@ func (t *FuncType) OutSlice() []*Type {
 	if t.TFlag&TFlagUncommon != 0 {
 		uadd += unsafe.Sizeof(UncommonType{})
 	}
-	return (*[1 << 17]*Type)(addChecked(unsafe.Pointer(t), uadd, "outCount > 0"))[t.InCount : t.InCount+outCount : t.InCount+outCount]
+	return (*[1 << 17]*Type)(addChecked(unsafe.Pointer(t), uadd, "outCount > 0"))[t.InCount : t.InCount+outCount : t.InCount+outCount] // 这里之所以是17, 是因为我们先切片拿到出参入参, 两个都是u16的.所以总共是u17大小的.
 }
 
 func (t *FuncType) IsVariadic() bool {
@@ -568,7 +571,7 @@ type StructType struct {
 
 // Name is an encoded type Name with optional extra data.
 //
-// The first byte is a bit field containing:
+// The first byte is a bit field containing: //前面4个bit是标志位.
 //
 //	1<<0 the name is exported
 //	1<<1 tag data follows the name
@@ -650,13 +653,13 @@ func (n Name) IsBlank() bool {
 // Writes at most 10 bytes.
 func writeVarint(buf []byte, n int) int {
 	for i := 0; ; i++ {
-		b := byte(n & 0x7f)
+		b := byte(n & 0x7f) //每次把n的最后8个bite写入buf中.
 		n >>= 7
 		if n == 0 {
 			buf[i] = b
 			return i + 1
 		}
-		buf[i] = b | 0x80
+		buf[i] = b | 0x80 //让最高位为1.
 	}
 }
 

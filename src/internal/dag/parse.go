@@ -9,8 +9,8 @@
 //
 //	a, b < c, d;
 //
-// which means c and d come after a and b in the partial order
-// (that is, there are edges from c and d to a and b),
+// which means c and d come after a and b in the partial order //表示在偏序上c和d都在a,b之后
+// (that is, there are edges from c and d to a and b),    // c到a有边, d到a右边, c到b右边, d到b右边, 但是ab之间不知道有没有边, cd之间不知道有没有边.
 // but doesn't provide a relative order between a vs b or c vs d.
 //
 // The rules can chain together, as in:
@@ -50,20 +50,20 @@ import (
 type Graph struct {
 	Nodes   []string
 	byLabel map[string]int
-	edges   map[string]map[string]bool
+	edges   map[string]map[string]bool //注意这个地方是二级map,key是label这个字符串. value是一个字典, 这个字典的key 是 到达的另外一个label2, 然后value是 label和label2之间是否存在一个边的布尔值. //所以可以看做一个二维数组,但是用了哈希加速查询.
 }
 
 func newGraph() *Graph {
 	return &Graph{byLabel: map[string]int{}, edges: map[string]map[string]bool{}}
 }
 
-func (g *Graph) addNode(label string) bool {
+func (g *Graph) addNode(label string) bool { //添加一个节点,
 	if _, ok := g.byLabel[label]; ok {
 		return false
 	}
 	g.byLabel[label] = len(g.Nodes)
-	g.Nodes = append(g.Nodes, label)
-	g.edges[label] = map[string]bool{}
+	g.Nodes = append(g.Nodes, label)   // 节点放入nodes
+	g.edges[label] = map[string]bool{} //然后这个节点配置一个map, key是label这个字符串. value是一个字典, 这个字典的key 是 到达的另外一个label2, 然后value是 label和label2之间是否存在一个边的布尔值.
 	return true
 }
 

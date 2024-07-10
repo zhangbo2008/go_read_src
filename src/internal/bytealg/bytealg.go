@@ -10,7 +10,7 @@ import (
 )
 
 // Offsets into internal/cpu records for use in assembly.
-const (
+const ( //获取cpu的配置信息.
 	offsetX86HasSSE42  = unsafe.Offsetof(cpu.X86.HasSSE42)
 	offsetX86HasAVX2   = unsafe.Offsetof(cpu.X86.HasAVX2)
 	offsetX86HasPOPCNT = unsafe.Offsetof(cpu.X86.HasPOPCNT)
@@ -24,7 +24,7 @@ const (
 // If MaxLen is not 0, make sure MaxLen >= 4.
 var MaxLen int
 
-// PrimeRK is the prime base used in Rabin-Karp algorithm.
+// PrimeRK is the prime base used in Rabin-Karp algorithm.  Rabin-Karp算法，是由M.O.Rabin和R.A.Karp发明的一种基于散列的字符串查找算法。
 const PrimeRK = 16777619
 
 // HashStr returns the hash and the appropriate multiplicative
@@ -35,7 +35,7 @@ func HashStr[T string | []byte](sep T) (uint32, uint32) {
 		hash = hash*PrimeRK + uint32(sep[i])
 	}
 	var pow, sq uint32 = 1, PrimeRK
-	for i := len(sep); i > 0; i >>= 1 {
+	for i := len(sep); i > 0; i >>= 1 { //字符串长度这个整数作为次幂. primeRK作为底的值.记作pow
 		if i&1 != 0 {
 			pow *= sq
 		}
@@ -57,13 +57,13 @@ func HashStrRev[T string | []byte](sep T) (uint32, uint32) { // 这里面T是泛
 			pow *= sq
 		}
 		sq *= sq
-	} //得到pow=PrimeRK**uint(sep)
+	} //得到pow=PrimeRK**uint(len(sep))
 	return hash, pow
 }
 
 // IndexRabinKarp uses the Rabin-Karp search algorithm to return the index of the
 // first occurrence of sep in s, or -1 if not present.
-func IndexRabinKarp[T string | []byte](s, sep T) int {
+func IndexRabinKarp[T string | []byte](s, sep T) int { //计算s中sep第一次出现时候的索引.
 	// Rabin-Karp search
 	hashss, pow := HashStr(sep)
 	n := len(sep)

@@ -1237,7 +1237,7 @@ func Index(s, substr string) int {
 		c0 := substr[0]
 		c1 := substr[1]
 		i := 0
-		t := len(s) - n + 1
+		t := len(s) - n + 1 //t是s中开头索引查询的最大值.
 		fails := 0
 		for i < t {
 			if s[i] != c0 {
@@ -1251,11 +1251,11 @@ func Index(s, substr string) int {
 			}
 			if s[i+1] == c1 && s[i:i+n] == substr {
 				return i
-			}
+			} //如果i不符合那么走下面逻辑. 让fail次数++
 			fails++
 			i++
 			// Switch to bytealg.IndexString when IndexByte produces too many false positives.
-			if fails > bytealg.Cutover(i) {
+			if fails > bytealg.Cutover(i) { // 如果失败次数太多, 那么用indexString来计算.
 				r := bytealg.IndexString(s[i:], substr)
 				if r >= 0 {
 					return r + i

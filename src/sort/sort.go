@@ -11,7 +11,7 @@ import "math/bits"
 
 // An implementation of Interface can be sorted by the routines in this package.
 // The methods refer to elements of the underlying collection by integer index.
-type Interface interface {
+type Interface interface { // 定义一个大写的接口叫Interface, 他表示能被排序的类.
 	// Len is the number of elements in the collection.
 	Len() int
 
@@ -47,7 +47,7 @@ func Sort(data Interface) {
 	if n <= 1 {
 		return
 	}
-	limit := bits.Len(uint(n))
+	limit := bits.Len(uint(n)) // 计算n需要多少bit来保存.
 	pdqsort(data, 0, n, limit)
 }
 
@@ -60,8 +60,8 @@ const (
 )
 
 // xorshift paper: https://www.jstatsoft.org/article/view/v008i14/xorshift.pdf
-type xorshift uint64
-
+type xorshift uint64 //这是论文地址.可以看做是一个低成本的随机数生成.现实中我们的seed往往用纳秒来做seed.
+// 可以查看论文或者也可以看我的博客里面有更详细的数学部分:https://www.cnblogs.com/zhangbo2008/p/18281613
 func (r *xorshift) Next() uint64 {
 	*r ^= *r << 13
 	*r ^= *r >> 17

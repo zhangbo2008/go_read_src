@@ -16,6 +16,35 @@ How to Use the Plan 9 C Compiler
 
 
 # plan9基本知识:
+	首先我们学习如何用vscode+delve来调试go的plan9汇编代码.
+	首先我们用vscode配置好go的运行环境.能正确打印helloworld代码.
+	编写代码:
+	//main.go
+	package main
+
+	func main() {
+
+		var aaa = Sum(2, 4)
+		print(aaa)
+	}
+
+	func Sum(x, y int) int
+
+	//add.s
+	TEXT ·Sum(SB), $0-8
+    MOVQ x+0(FP), AX  // 将第一个参数 x 放入 AX
+    MOVQ y+8(FP), BX  // 将第二个参数 y 放入 BX
+    ADDQ BX, AX       // 将 BX 加到 AX
+    MOVQ AX, ret+16(FP)  // 将结果从 AX 移到返回值位置
+    RET               // 返回
+	之后我们sum这行在go代码里面打断点.单步调试就会发现delve调试器自动进入了汇编代码中.
+	这时候我们在watch里面可以输入寄存器名字这些来查看寄存器.
+	一些关键寄存器: RSP, RBP, RAX, RBX, RCX, RDX, RSI, RDI
+
+
+
+
+
 	https://cloud.tencent.com/developer/article/2416368
 
 	go汇编中出现unexpected EOF asm: assembly of pkg\test.s failed的解决办法
@@ -35,7 +64,7 @@ How to Use the Plan 9 C Compiler
 	一份很详细的博客:
 	https://blog.csdn.net/zhu0902150102/article/details/129539307
 
-  plan9的汇编没什么好的方法来调试.
+  
 
 
 
@@ -88,8 +117,8 @@ func Sum(x, y int) int
 ```
 //add.s:
 TEXT ·Sum(SB), $0-8
-    MOVQ x11111111111+0(FP), AX  // 将第一个参数 x 放入 AX //注意这里面xy的变量名,随便写.无所谓程序运行.
-    MOVQ y222222222222+8(FP), BX  // 将第二个参数 y 放入 BX
+    MOVQ x1213+0(FP), AX  // 将第一个参数 x 放入 AX //注意这里面xy的变量名,随便写.无所谓程序运行.
+    MOVQ y2324+8(FP), BX  // 将第二个参数 y 放入 BX
     ADDQ BX, AX       // 将 BX 加到 AX
     MOVQ AX, ret+16(FP)  // 将结果从 AX 移到返回值位置
     RET               // 返回
@@ -767,9 +796,7 @@ src里面从依赖最少得开始看:
 	这个库包绕过了go的类型检查,所以不安全.可以直接访问变量的内存和指针.所以很方便.代码中只有函数名和大量的注释.所以这里把注释进行了一些翻译.估计这些函数实现的代码在其他部分.
 
 
-# strings
-	
-		可以看到每个文件都配有_test.go, 可以debug里面的测试代码加深理解.
+
 # src\strings\builder.go
 		builder是用来创建字符串的.
 # src\strings\clone.go
@@ -853,7 +880,7 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 
 
 
-# math
+		# math
 		浮点数基本资料:https://blog.csdn.net/weixin_47713503/article/details/108699001
 		这里面我们需要记住几个关键数值:在下面一些代码中有用到.
 			长浮点数的各个位: 符号位1, 阶码11, 尾数码52, 总位数64, 偏置值3FFH, 十进制偏置值1023
@@ -921,9 +948,10 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 		# src\math\cmplx
 			都是一些复数计算, 很少用到.
 		# src\math\big\arith.go
+			首先复习大端编码,小端编码
 			// 1）Little-endian：将低序字节存储在起始地址（低位编址）
 			// 2）Big-endian：将高序字节存储在起始地址（高位编址）
-			// 记忆: 关注地址的开始地址存什么, 开始存高bit, 就叫大字节序. endian:是end单词加一个后缀表示字节的顺序. 高bit,表示的是大的数. 比如bin(11)里面第一个1表示2, 第二个1表示1.所以就记住了.地址上来就记录大的数就是大endian, 地址上来记录小的数就是小endian.
+			// 记忆: 关注地址的开始地址存什么, 开始存高bit, 就叫大字节序. endian:是end单词加一个后缀表示字节的顺序. 高bit,表示的是大的数. 比如bin(11)里面第一个1表示2, 第二个1表示1.所以就记住了.地址上来就记录大数就是大endian, 地址上来记录小数就是小endian.
 			// 如果我们将0x1234abcd写入到以0x0000开始的内存中，则结果为；
 			// address	big-endian	little-endian
 			// 0x0000		0x12				0xcd
@@ -1065,22 +1093,187 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 		# src\fmt\print.go
 			根据format刷新字符串格式,该转换类型的转换类型,转成能打印的字符串,然后交给io处理.
 
+		# src\hash\fnv\fnv.go
+			哈希算法, 把字符串看做ascii码的数字,跟一些素数做乘法加法得到哈希值.
+
+		# src\image\color\color.go
+			color类
+		# src\image\image.go
+			图像的image类
+		# src\image\color\ycbcr.go
+			ycbcr跟rgb的转化
+		# src\image\color\palette\gen.go
+			调色板的生成
+		# src\index\suffixarray\suffixarray.go
+			后缀数组用于字符串搜索.
+
+
+		# src\iter\iter.go
+			迭代器:底层在runtime.newcoro
+		# src\sort\sort.go
+			定义排序算法的接口
+		# src\sort\gen_sort_variants.go
+			生成文档
+
+
+
+#下面是底层部分
+		#主要涉及internal, runtime, reflect, go, syscall等目录,都是平时很少用到的go内部调用的底层算法,和汇编,编译器运行时,操作系统相关.
+
+
+		# src\internal\goarch\gengoarch.go
+			生成每一个芯片架构的参数go文件.
+		# src\internal\abi\abi_amd64.go
+			芯片的寄存器相关参数.
+			// RAX, RBX, RCX, RDI, RSI, R8, R9, R10, R11.  //这9个用来存整数.
+			IntArgRegs = 9
+
+			// X0 -> X14.
+			FloatArgRegs = 15 //这15个用来存float
+
+			// We use SSE2 registers which support 64-bit float operations.  The 8 registers are named xmm0 through xmm7. 这些用来操作8byte的浮点数. float64.
+			EffectiveFloatRegSize = 8
+		# src\internal\abi\abi.go
+			应用二进制接口（英语：application binary interface，缩写为ABI），这块源码的文档是与函数传参以及返回值传递到底是分配在栈还是寄存器上的调用规约
+		# src\internal\abi\type.go
+			go中数据类型的定义
+		# src\internal\abi\compiletype.go
+			计算各种类型的占用byte大小.
+
+		# src\internal\bisect\bisect.go
+			实现bisect debug工具.
+
+		# src\internal\buildcfg\cfg.go
+			利用runtime库返回操作系统信息和硬件信息.
+
+		# src\internal\bytealg\bytealg.go
+			RabinKarp字符串搜索子串算法.
+
+		# src\internal\bytealg\compare_generic.go
+			里面有byte[] 和string 的字符串比较算法.
+		# src\internal\bytealg\compare_amd64.s
+			上面go代码编译之后的代码
+
+		# src\internal\bytealg\count_generic.go
+			里面有byte[] 和string 的字符串计数算法,都非常简单.
+
+		# src\internal\bytealg\index_amd64.go
+			提供index索引算法的支持函数.
+
+		# src\internal\chacha8rand\chacha8_generic.go
+			chacha8加密算法.
+
+		# src\internal\coverage
+			这个用来提供go test 覆盖率测试的.
+		# src\internal\cpu\cpu_x86.go
+			提供cpu信息的函数
+		# src\internal\cpu\cpu_x86.s
+			上面go文件里面的3个函数的汇编源码.因为太常用了,所以汇编来加速.
+
+
+		# src\internal\dag\alg.go
+			dag图的算法.DAG，Directed Acyclic Graph即「有向无环图」。
+		# src\internal\dag\parse.go
+			dag图的定义和字符串化解析
+		# src\internal\diff\diff.go
+			比较两个文件的差异, git上使用的算法.
+			https://www.jianshu.com/p/fdaeec5dc7ff
+			从LCS到IGListKit框架中的Diff算法
 
 
 
 
+		# src\reflect
+			属于go的高级用法.读源码之前可以通过go的官方文档.
+			整体复习一遍reflect的用法.
+			https://go.dev/blog/laws-of-reflection
+			这里是这个文档重要部分的记录,有时间的建议阅读上面链接的官方文档.
+			1.因为reflet依赖go的类型,所以我们先来看go的类型.
+				go是静态类型的. 每一个变量都有一个静态类型,换句话说,只有一个类型并且在编译时候就会固定. 例如: int, float32, *MyType, []byte,等等.(比如python,js这种就是运行时才会决定变量的类型,并且也没编译过程,就是动态类型的语言)
+				例如我们定义:
+				type MyInt int
+
+				var i int
+				var j MyInt
+				那么i有类型int, j的类型MyInt,i,j类型不同,他们不能互相赋值,除非进行类型转化.(这是go的设计哲学决定的,保证类型安全)
+				一种重要的类型是接口类型. 这种类型绑定了方法.一个接口变量可以保存任意具体的值,只要这些值实现了接口的方法即可.一个非常知名的例子就是io.Reader 和io.Writer.我们看他们的源码:
+				// Reader is the interface that wraps the basic Read method.
+				type Reader interface {
+						Read(p []byte) (n int, err error)
+				}
+
+				// Writer is the interface that wraps the basic Write method.
+				type Writer interface {
+						Write(p []byte) (n int, err error)
+				}
+			一个变量他是io.Reader类型的,那么他可以保存任意值,只需要这个value的类型有一个Read方法.
+			比如:
+				var r io.Reader
+				r = os.Stdin
+				r = bufio.NewReader(r)
+				r = new(bytes.Buffer)
+				// and so on // 可以看到r的这三种赋值都是正确的.
+				非常重要的一点是.不管r具体保存什么类型的值,r的类型始终是io.Reader.Go是静态类型的.r的静态类型就是io.Reader不是bytes.Buffer什么的.
+				一个重要例子就是interface{},他可以保存任意类型的值.
+				一些人说go的接口是动态类型的,这是错的.因为一个接口他的值在运行时可以任意变化,但是他始终类型就是这个接口类型.这点就引申出来了reflect库包的作用.
 
 
+				接口的表示:一个接口的变量保存一对信息. 一个是变量具体的值.一个是这个值的类型描述.
+				例如:
+				var r io.Reader
+				tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+				if err != nil {
+						return nil, err
+				}
+				r = tty
+				这份代码运行之后. r包含(tty, *os.File),但是r只能使用reader方法.
+				注意到我们的类型是*os.File,他包含了超出Read的方法.所以我们可以运行如下代码.
+				var w io.Writer
+				w = r.(io.Writer)  //可以进行类型转化.
+				我们也可以这么干. w只能使用writer方法.
+				var empty interface{}
+				empty = w
+				那么empty底层也是(tty, *os.File).这时empty变量不能有任何方法了.
+				这很方便, 因为一个空的interface,包含了全部的value和类型信息.
+			The first law of reflection
+				1. Reflection goes from interface value to reflection object.
+				反射可以让接口的值变成反射对象.
+				var x float64 = 3.4
+				v := reflect.ValueOf(x)
+				fmt.Println("type:", v.Type()) //type: float64
+				fmt.Println("kind is float64:", v.Kind() == reflect.Float64)//kind is float64: true
+				fmt.Println("value:", v.Float())//value: 3.4
+				也就是说valueof的结果再取type,还能得到x的类型. valueof的结果取kind也能得到类型.
 
 
+				The reflection library has a couple of properties worth singling out. First, to keep the API simple, the “getter” and “setter” methods of Value operate on the largest type that can hold the value: int64 for all the signed integers, for instance. That is, the Int method of Value returns an int64 and the SetInt value takes an int64; it may be necessary to convert to the actual type involved:
+				var x uint8 = 'x'
+				v := reflect.ValueOf(x)
+				fmt.Println("type:", v.Type())                            // uint8.
+				fmt.Println("kind is uint8: ", v.Kind() == reflect.Uint8) // true.
+				x = uint8(v.Uint())                                       // v.Uint returns a uint64.// uint之后, 会用最大的64来存.这是为了兼容性考虑
 
 
+				The second property is that the Kind of a reflection object describes the underlying type, not the static type. If a reflection object contains a value of a user-defined integer type, as in
 
-
-
-
-
-
+				type MyInt int
+				var x MyInt = 7
+				v := reflect.ValueOf(x)
+				the Kind of v is still reflect.Int, even though the static type of x is MyInt, not int. In other words, the Kind cannot discriminate an int from a MyInt even though the Type can.
+			The second law of reflection
+			2. Reflection goes from reflection object to interface value.
+			反射可以变回到接口
+			// Interface returns v's value as an interface{}.
+			func (v Value) Interface() interface{}//这里面v是通过reflect.ValueOf函数得到的value.这里面把他变成一个空接口.
+			例如:
+			y := v.Interface().(float64) // y will have type float64.
+			fmt.Println(y)
+			to print the float64 value represented by the reflection object v.
+			//可以直接写fmt.Println(v)
+			Again, there’s no need to type-assert the result of v.Interface() to float64; the empty interface value has the concrete value’s type information inside and Printf will recover it.
+			In short, the Interface method is the inverse of the ValueOf function, except that its result is always of static type interface{}.
+			The third law of reflection
+			3. To modify a reflection object, the value must be settable.
 
 
 

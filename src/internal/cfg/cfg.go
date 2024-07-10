@@ -8,7 +8,7 @@
 package cfg
 
 // KnownEnv is a list of environment variables that affect the operation
-// of the Go command.
+// of the Go command. //go里面反引号表示多行字符串.
 const KnownEnv = `
 	AR
 	CC

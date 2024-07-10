@@ -7,7 +7,7 @@
 // See [golang.org/x/tools/cmd/bisect] for details about using the tool.
 //
 // To be a bisect target, allowing bisect to help determine which of a set of independent
-// changes provokes a failure, a program needs to:
+// changes provokes a failure, a program needs to:  //用来查找那一次变更代码导致运行失败.
 //
 //  1. Define a way to accept a change pattern on its command line or in its environment.
 //     The most common mechanism is a command-line flag.

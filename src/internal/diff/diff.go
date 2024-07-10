@@ -43,7 +43,7 @@ type pair struct{ x, y int }
 // Second, the name is frequently interpreted as meaning that you have
 // to wait longer (to be patient) for the diff, meaning that it is a slower algorithm,
 // when in fact the algorithm is faster than the standard one.
-func Diff(oldName string, old []byte, newName string, new []byte) []byte {
+func Diff(oldName string, old []byte, newName string, new []byte) []byte { // oldName是旧文件的文件名, old是旧文件的内容, newName是新文件的文件名, new是新文件的内容. 返回diff内容是一个字符串.
 	if bytes.Equal(old, new) {
 		return nil
 	}
@@ -180,18 +180,18 @@ func lines(x []byte) []string {
 
 // tgs returns the pairs of indexes of the longest common subsequence
 // of unique lines in x and y, where a unique line is one that appears
-// once in x and once in y.
+// once in x and once in y.  //这个算法给出x,y中都只出现一次的元素的LCS
 //
 // The longest common subsequence algorithm is as described in
 // Thomas G. Szymanski, “A Special Case of the Maximal Common
 // Subsequence Problem,” Princeton TR #170 (January 1975),
 // available at https://research.swtch.com/tgs170.pdf.
-func tgs(x, y []string) []pair {
-	// Count the number of times each string appears in a and b.
+func tgs(x, y []string) []pair { //Thomas G. Szymanski 人名首字母定义的算法.//这个很复杂, 需要看上面注释里面的pdf论文.
+	// Count the number of times each string appears in a and b.//首先我们进行计数
 	// We only care about 0, 1, many, counted as 0, -1, -2
 	// for the x side and 0, -4, -8 for the y side.
 	// Using negative numbers now lets us distinguish positive line numbers later.
-	m := make(map[string]int)
+	m := make(map[string]int) //这个字典, 默认value是0
 	for _, s := range x {
 		if c := m[s]; c > -2 {
 			m[s] = c - 1
@@ -201,7 +201,7 @@ func tgs(x, y []string) []pair {
 		if c := m[s]; c > -8 {
 			m[s] = c - 4
 		}
-	}
+	} //注意这2个计数都是操作m同一个字典.
 
 	// Now unique strings can be identified by m[s] = -1+-4.
 	//
@@ -210,14 +210,14 @@ func tgs(x, y []string) []pair {
 	//	yi[i] = increasing indexes of unique strings in y.
 	//	inv[i] = index j such that x[xi[i]] = y[yi[j]].
 	var xi, yi, inv []int
-	for i, s := range y {
+	for i, s := range y { //这个for循环找到了x,y中都只出现一次的字符串.把他改成0,1,2,3,4这种
 		if m[s] == -1+-4 {
 			m[s] = len(yi)
 			yi = append(yi, i)
 		}
 	}
 	for i, s := range x {
-		if j, ok := m[s]; ok && j >= 0 {
+		if j, ok := m[s]; ok && j >= 0 { //
 			xi = append(xi, i)
 			inv = append(inv, j)
 		}

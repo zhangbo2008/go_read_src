@@ -6,7 +6,7 @@
 
 package sort
 
-// insertionSort_func sorts data[a:b] using insertion sort.
+// insertionSort_func sorts data[a:b] using insertion sort.//插入排序
 func insertionSort_func(data lessSwap, a, b int) {
 	for i := a + 1; i < b; i++ {
 		for j := i; j > a && data.Less(j, j-1); j-- {
@@ -17,7 +17,7 @@ func insertionSort_func(data lessSwap, a, b int) {
 
 // siftDown_func implements the heap property on data[lo:hi].
 // first is an offset into the array where the root of the heap lies.
-func siftDown_func(data lessSwap, lo, hi, first int) {
+func siftDown_func(data lessSwap, lo, hi, first int) {//堆排序
 	root := lo
 	for {
 		child := 2*root + 1
