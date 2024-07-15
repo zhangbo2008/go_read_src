@@ -35,11 +35,11 @@ import (
 //
 // To compare two Values, compare the results of the Interface method.
 // Using == on two Values does not compare the underlying values
-// they represent.
+// they represent. //比较的是接口, 也就是这个值的方法是不是相同. 而不是比较底层的数据.
 type Value struct {
 	// typ_ holds the type of the value represented by a Value.
 	// Access using the typ method to avoid escape of v.
-	typ_ *abi.Type
+	typ_ *abi.Type //abi.Type表示的是一个运行时的go类型.反射就是在运行时提供一个修改类型和值的方法.
 
 	// Pointer-valued data or, if flagIndir is set, pointer to data.
 	// Valid when either flagIndir is set or typ.pointers() is true.
@@ -59,7 +59,7 @@ type Value struct {
 	//
 	// The remaining 22+ bits give a method number for method values.
 	// If flag.kind() != Func, code can assume that flagMethod is unset.
-	flag
+	flag //一个bitmap用来标志value的元方法.
 
 	// A method value represents a curried method invocation
 	// like r.Read for some receiver r. The typ+val+flag bits describe
@@ -4009,3 +4009,5 @@ func noescape(p unsafe.Pointer) unsafe.Pointer {
 	x := uintptr(p)
 	return unsafe.Pointer(x ^ 0)
 }
+
+//The function then performs a bitwise XOR operation with the value 0 (which is the same as saying uintptr(p) ^ 0) and returns the result as an unsafe.Pointer. According to the Go documentation, this operation has no effect on the memory address, but it does affect the escape analysis optimization.

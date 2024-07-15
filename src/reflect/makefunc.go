@@ -49,7 +49,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 	}
 
 	t := typ.common()
-	ftyp := (*funcType)(unsafe.Pointer(t))
+	ftyp := (*funcType)(unsafe.Pointer(t)) // typ是一个函数类型.
 
 	code := abi.FuncPCABI0(makeFuncStub)
 

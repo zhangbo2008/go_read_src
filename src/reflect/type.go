@@ -41,11 +41,11 @@ type Type interface {
 
 	// Align returns the alignment in bytes of a value of
 	// this type when allocated in memory.
-	Align() int
+	Align() int //类型的对齐bytes数
 
 	// FieldAlign returns the alignment in bytes of a value of
 	// this type when used as a field in a struct.
-	FieldAlign() int
+	FieldAlign() int //字段对齐的比特数
 
 	// Method returns the i'th method in the type's method set.
 	// It panics if i is not in the range [0, NumMethod()).
@@ -58,7 +58,7 @@ type Type interface {
 	// method signature, without a receiver, and the Func field is nil.
 	//
 	// Methods are sorted in lexicographic order.
-	Method(int) Method
+	Method(int) Method //是一个方法, 返回第i个method
 
 	// MethodByName returns the method with that name in the type's
 	// method set and a boolean indicating if the method was found.
@@ -873,7 +873,7 @@ func (t *interfaceType) MethodByName(name string) (m Method, ok bool) {
 }
 
 // A StructField describes a single field in a struct.
-type StructField struct {
+type StructField struct { //表示一个结构体的字段.
 	// Name is the field name.
 	Name string
 

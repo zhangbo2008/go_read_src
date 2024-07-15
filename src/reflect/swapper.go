@@ -15,7 +15,7 @@ import (
 // slice.
 //
 // Swapper panics if the provided interface is not a slice.
-func Swapper(slice any) func(i, j int) {
+func Swapper(slice any) func(i, j int) { //交换slice里面的i,j索引内容.
 	v := ValueOf(slice)
 	if v.Kind() != Slice {
 		panic(&ValueError{Method: "Swapper", Kind: v.Kind()})
@@ -32,7 +32,7 @@ func Swapper(slice any) func(i, j int) {
 		}
 	}
 
-	typ := v.Type().Elem().common()
+	typ := v.Type().Elem().common() //typ是v这个数组的每一个元素的类型.
 	size := typ.Size()
 	hasPtr := typ.PtrBytes != 0
 
@@ -43,7 +43,7 @@ func Swapper(slice any) func(i, j int) {
 			return func(i, j int) { ps[i], ps[j] = ps[j], ps[i] }
 		}
 		if typ.Kind() == abi.String {
-			ss := *(*[]string)(v.ptr)
+			ss := *(*[]string)(v.ptr) //v是数组.所以类型转化为[]string的指针.
 			return func(i, j int) { ss[i], ss[j] = ss[j], ss[i] }
 		}
 	} else {
@@ -63,8 +63,8 @@ func Swapper(slice any) func(i, j int) {
 		}
 	}
 
-	s := (*unsafeheader.Slice)(v.ptr)
-	tmp := unsafe_New(typ) // swap scratch space
+	s := (*unsafeheader.Slice)(v.ptr) //unsafeheader.slice是slice的运行时的类型表示. unsafe表示这个是一个底层应用不推荐用户层使用.
+	tmp := unsafe_New(typ)            // swap scratch space
 
 	return func(i, j int) {
 		if uint(i) >= uint(s.Len) || uint(j) >= uint(s.Len) {
@@ -72,8 +72,8 @@ func Swapper(slice any) func(i, j int) {
 		}
 		val1 := arrayAt(s.Data, i, size, "i < s.Len")
 		val2 := arrayAt(s.Data, j, size, "j < s.Len")
-		typedmemmove(typ, tmp, val1)
-		typedmemmove(typ, val1, val2)
-		typedmemmove(typ, val2, tmp)
+		typedmemmove(typ, tmp, val1)  //通过临时变量tmp来交换val1和val2的值.//这行是val1的值给tmp
+		typedmemmove(typ, val1, val2) //val2给val1
+		typedmemmove(typ, val2, tmp)  //tmp的值给val2
 	}
 }

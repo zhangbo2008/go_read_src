@@ -1274,8 +1274,104 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 			In short, the Interface method is the inverse of the ValueOf function, except that its result is always of static type interface{}.
 			The third law of reflection
 			3. To modify a reflection object, the value must be settable.
+			这条用法是最复杂的,单也是最有意思的.
+			Here is some code that does not work, but is worth studying.
+
+			var x float64 = 3.4
+			v := reflect.ValueOf(x)
+			v.SetFloat(7.1) // Error: will panic.
 
 
+
+
+
+			If you run this code, it will panic with the cryptic message
+
+			panic: reflect.Value.SetFloat using unaddressable value
+			The problem is not that the value 7.1 is not addressable; it’s that v is not settable. Settability is a property of a reflection Value, and not all reflection Values have it.
+
+			The CanSet method of Value reports the settability of a Value; in our case,
+
+			var x float64 = 3.4
+			v := reflect.ValueOf(x)
+			fmt.Println("settability of v:", v.CanSet())
+			prints
+
+			settability of v: false
+
+
+			When we say
+
+			var x float64 = 3.4
+			v := reflect.ValueOf(x)
+			we pass a copy of x to reflect.ValueOf
+
+			If we want to modify x by reflection, we must give the reflection library a pointer to the value we want to modify.
+
+			Let’s do that. First we initialize x as usual and then create a reflection value that points to it, called p.//我们来初始化一个x,然后拿一个指针p指向他.
+
+			var x float64 = 3.4
+			p := reflect.ValueOf(&x) // Note: take the address of x.//这里我们操作地址.
+			fmt.Println("type of p:", p.Type())
+			fmt.Println("settability of p:", p.CanSet())
+			//The output so far is
+
+			type of p: *float64
+			settability of p: false
+
+			我们操作他的指向内容:
+			v := p.Elem()//通过Elem来获取指向内容.
+			fmt.Println("settability of v:", v.CanSet())//settability of v: true
+			//这时我们才可以修改x:
+			v.SetFloat(7.1)
+			fmt.Println(v.Interface()) //7.1
+			fmt.Println(x)             //7.1
+			结构体上的应用:
+			A common way for this situation to arise is when using reflection to modify the fields of a structure.
+
+
+			type T struct {
+					A int
+					B string
+			}
+			t := T{23, "skidoo"}
+			s := reflect.ValueOf(&t).Elem()//s是通过反射得到的真正t底层的本身!,所以下面操作s比t更底层.方法更丰富.我们直接用t不知道他的各个类型,但是用s就知道各个字段类型和值.
+			typeOfT := s.Type()//拿到结构体的具体定义类型
+			for i := 0; i < s.NumField(); i++ {//遍历s的各个字段. s拿到字段的值,typeOfT拿到各个字段的类型.
+					f := s.Field(i)
+					fmt.Printf("%d: %s %s = %v\n", i,
+							typeOfT.Field(i).Name, f.Type(), f.Interface())
+			}
+
+
+			The output of this program is
+
+			0: A int = 23
+			1: B string = skidoo
+
+
+			Because s contains a settable reflection object, we can modify the fields of the structure.
+
+			s.Field(0).SetInt(77)
+			s.Field(1).SetString("Sunset Strip")
+			fmt.Println("t is now", t)
+
+
+			And here’s the result:
+
+			t is now {77 Sunset Strip}
+		# 下面我们回到reflect源码
+		# src\reflect\value.go
+		# src\reflect\type.go
+			提供了运行时的value和type的定义.给reflect库使用.
+			提供了go基本类型的value和type的一些运行时的方法.用于reflect库里面其他文件的调用.
+			这两个类型都过于长,可以挑主要部分看看.
+
+		# src\reflect\visiblefields.go
+			返回一个结构体里面的可以访问到的字段
+		# src\reflect\swapper.go
+			Swapper returns a function that swaps the elements in the provided
+			slice.
 
 
 
