@@ -19,20 +19,26 @@ TEXT ·Loadint32(SB), NOSPLIT, $0-12
 TEXT ·Loadint64(SB), NOSPLIT, $0-16
 	JMP	·Load64(SB)
 
-// bool Cas(int32 *val, int32 old, int32 new)
+// bool Cas(int32 *val, int32 old, int32 new) //这是cas的伪代码.
 // Atomically:
 //	if(*val == old){
 //		*val = new;
 //		return 1;
 //	} else
 //		return 0;
-TEXT ·Cas(SB),NOSPLIT,$0-17
+TEXT ·Cas(SB),NOSPLIT,$0-17    //cas表示32位的cas运算. cas输入3个参数.一个ptr,一个old,一个new, mov里面b:8位 w:16位, L32位,q是64位.
 	MOVQ	ptr+0(FP), BX
 	MOVL	old+8(FP), AX
 	MOVL	new+12(FP), CX
 	LOCK
-	CMPXCHGL	CX, 0(BX)
-	SETEQ	ret+16(FP)
+	CMPXCHGL	CX, 0(BX)    //这两行一起表示元操作,加上lock表示原子性.
+//CMPXCHG汇编指令详解。
+//这条指令将al\ax\eax\rax中的值与首操作数比较:
+
+//1.如果相等，第2操作数的直装载到首操作数，zf置1。(相当于相减为0，所以0标志位置位)
+
+//2.如果不等， 首操作数的值装载到al\ax\eax\rax，并将zf清0
+	SETEQ	ret+16(FP)        //设置返回值 //sete的意思就是set equal 用ZF标志位的值。所以sete指令的意思就是根据ZF标志位的值设置一个变量的值是1和0
 	RET
 
 // bool	·Cas64(uint64 *val, uint64 old, uint64 new)
@@ -159,7 +165,7 @@ TEXT ·StorepNoWB(SB), NOSPLIT, $0-16
 TEXT ·Store(SB), NOSPLIT, $0-12
 	MOVQ	ptr+0(FP), BX
 	MOVL	val+8(FP), AX
-	XCHGL	AX, 0(BX)
+	XCHGL	AX, 0(BX)//ax写入bx地址.
 	RET
 
 TEXT ·Store8(SB), NOSPLIT, $0-9

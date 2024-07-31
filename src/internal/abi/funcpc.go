@@ -18,7 +18,7 @@ package abi
 // direct reference of a function defined as ABI0. Otherwise it is a
 // compile-time error.
 //
-// Implemented as a compile intrinsic.
+// Implemented as a compile intrinsic.// 计算f这个函数的entry PC,就是f的地址的下一个指针位置.就是f函数的进入地址.
 func FuncPCABI0(f interface{}) uintptr
 
 // FuncPCABIInternal returns the entry PC of the function f. If f is a

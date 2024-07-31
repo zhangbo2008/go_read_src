@@ -43,7 +43,7 @@ type makeFuncImpl struct {
 //
 // The Examples section of the documentation includes an illustration
 // of how to use MakeFunc to build a swap function for different types.
-func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
+func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value { //把函数打包成一个value
 	if typ.Kind() != Func {
 		panic("reflect: call of MakeFunc with non-Func type")
 	}
@@ -51,7 +51,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 	t := typ.common()
 	ftyp := (*funcType)(unsafe.Pointer(t)) // typ是一个函数类型.
 
-	code := abi.FuncPCABI0(makeFuncStub)
+	code := abi.FuncPCABI0(makeFuncStub) //abi.FuncPCABI0 计算函数的进入地址.makeFuncStub 进行了函数调用.
 
 	// makeFuncImpl contains a stack map for use by the runtime
 	_, _, abid := funcLayout(ftyp, nil)
@@ -93,7 +93,7 @@ type methodValue struct {
 // semantically equivalent to the input as far as the user of package
 // reflect can tell, but the true func representation can be handled
 // by code like Convert and Interface and Assign.
-func makeMethodValue(op string, v Value) Value {
+func makeMethodValue(op string, v Value) Value { //把v包装成makeFuncImpl对象.
 	if v.flag&flagMethod == 0 {
 		panic("reflect: internal error: invalid use of makeMethodValue")
 	}
@@ -124,7 +124,7 @@ func makeMethodValue(op string, v Value) Value {
 	// Cause panic if method is not appropriate.
 	// The panic would still happen during the call if we omit this,
 	// but we want Interface() and other operations to fail early.
-	methodReceiver(op, fv.rcvr, fv.method)
+	methodReceiver(op, fv.rcvr, fv.method) //把函数信息放到fv对象里面.同时进行检测是否匹配.不适合会进行panic
 
 	return Value{ftyp.Common(), unsafe.Pointer(fv), v.flag&flagRO | flag(Func)}
 }
@@ -142,11 +142,11 @@ func methodValueCall()
 
 // This structure must be kept in sync with runtime.reflectMethodValue.
 // Any changes should be reflected in all both.
-type makeFuncCtxt struct {
+type makeFuncCtxt struct { //函数调用的上下文,保存需要使用的信息.
 	fn      uintptr
-	stack   *bitVector // ptrmap for both stack args and results
-	argLen  uintptr    // just args
-	regPtrs abi.IntArgRegBitmap
+	stack   *bitVector          // ptrmap for both stack args and results//栈用一个byte数组描述
+	argLen  uintptr             // just args
+	regPtrs abi.IntArgRegBitmap //寄存器使用情况
 }
 
 // moveMakeFuncArgPtrs uses ctxt.regPtrs to copy integer pointer arguments
@@ -160,17 +160,17 @@ type makeFuncCtxt struct {
 // memory.
 //
 //go:nosplit
-func moveMakeFuncArgPtrs(ctxt *makeFuncCtxt, args *abi.RegArgs) {
+func moveMakeFuncArgPtrs(ctxt *makeFuncCtxt, args *abi.RegArgs) { //把args里面整数信息写入regPtrs信息里面.
 	for i, arg := range args.Ints {
 		// Avoid write barriers! Because our write barrier enqueues what
 		// was there before, we might enqueue garbage.
 		if ctxt.regPtrs.Get(i) {
-			*(*uintptr)(unsafe.Pointer(&args.Ptrs[i])) = arg
+			*(*uintptr)(unsafe.Pointer(&args.Ptrs[i])) = arg //把数据写入指针寄存器里面. 让指针指向这个int的值arg,这个arg是指针地址.
 		} else {
 			// We *must* zero this space ourselves because it's defined in
 			// assembly code and the GC will scan these pointers. Otherwise,
 			// there will be garbage here.
-			*(*uintptr)(unsafe.Pointer(&args.Ptrs[i])) = 0
+			*(*uintptr)(unsafe.Pointer(&args.Ptrs[i])) = 0 //没有我们就指向0. 0地址.
 		}
 	}
 }

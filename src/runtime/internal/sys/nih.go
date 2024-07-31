@@ -38,4 +38,4 @@ type nih struct{}
 // scheduler and the memory allocator where they are illegal or simply
 // inefficient. This mechanism is reasonably safe and does not compromise
 // the readability of the runtime.
-type NotInHeap struct{ _ nih }
+type NotInHeap struct{ _ nih } //这个类型只能放在栈上不能放堆内存上.

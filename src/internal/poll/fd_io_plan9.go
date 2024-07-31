@@ -27,7 +27,7 @@ type asyncIO struct {
 	pid int
 }
 
-// result is the return value of a Read or Write operation.
+// result is the return value of a Read or Write operation.// n是记录读写的字符数量.
 type result struct {
 	n   int
 	err error
@@ -35,11 +35,11 @@ type result struct {
 
 // newAsyncIO returns a new asyncIO that performs an I/O
 // operation by calling fn, which must do one and only one
-// interruptible system call.
+// interruptible system call. // fn是io操作,b是buffer// newAsyncIO 会新建一个异步io,然后读取通过fn.
 func newAsyncIO(fn func([]byte) (int, error), b []byte) *asyncIO {
 	aio := &asyncIO{
 		res: make(chan result, 0),
-	}
+	} //res是一个无buffer的channel类型.
 	aio.mu.Lock()
 	go func() {
 		// Lock the current goroutine to its process
@@ -50,11 +50,11 @@ func newAsyncIO(fn func([]byte) (int, error), b []byte) *asyncIO {
 		runtime.LockOSThread()
 		runtime_ignoreHangup()
 		aio.pid = syscall.Getpid()
-		aio.mu.Unlock()
+		aio.mu.Unlock() //这个地方释放锁,可以让69行函数来禁止这个函数读取.
 
 		n, err := fn(b)
 
-		aio.mu.Lock()
+		aio.mu.Lock() //已经读取完了, 那么就没法停止了,所以这里加锁.
 		aio.pid = -1
 		runtime_unignoreHangup()
 		aio.mu.Unlock()
@@ -66,22 +66,22 @@ func newAsyncIO(fn func([]byte) (int, error), b []byte) *asyncIO {
 
 // Cancel interrupts the I/O operation, causing
 // the Wait function to return.
-func (aio *asyncIO) Cancel() {
+func (aio *asyncIO) Cancel() { //这个函数可以异步cancel上一个函数的读取任务.
 	aio.mu.Lock()
 	defer aio.mu.Unlock()
 	if aio.pid == -1 {
 		return
-	}
+	} //75行有可能在55行代码运行是触发来cancel55行的代码.
 	f, e := syscall.Open("/proc/"+itoa.Itoa(aio.pid)+"/note", syscall.O_WRONLY)
 	if e != nil {
 		return
 	}
 	syscall.Write(f, []byte("hangup"))
-	syscall.Close(f)
+	syscall.Close(f) //调用系统命令来关闭f这个文件描述符.
 }
 
 // Wait for the I/O operation to complete.
-func (aio *asyncIO) Wait() (int, error) {
+func (aio *asyncIO) Wait() (int, error) { //让后续等待io完成. 利用channel即可.
 	res := <-aio.res
 	return res.n, res.err
 }

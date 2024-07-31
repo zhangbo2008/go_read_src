@@ -15,7 +15,7 @@ import (
 // since we call it on every call to gentraceback.
 // The cached value is a uint32 in which the low bits
 // are the "crash" and "all" settings and the remaining
-// bits are the traceback value (0 off, 1 on, 2 include system).
+// bits are the traceback value (0 off, 1 on, 2 include system).//用来追踪栈的信息
 const (
 	tracebackCrash = 1 << iota
 	tracebackAll

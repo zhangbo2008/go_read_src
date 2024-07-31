@@ -21,7 +21,7 @@ type ticksType struct {
 	lock       mutex
 	startTicks int64
 	startTime  int64
-	val        atomic.Int64
+	val        atomic.Int64 //val表示一秒钟走过多少个cpu的tick
 }
 
 // init initializes ticks to maximize the chance that we have a good ticksPerSecond reference.
@@ -30,7 +30,7 @@ type ticksType struct {
 func (t *ticksType) init() {
 	lock(&ticks.lock)
 	t.startTime = nanotime()
-	t.startTicks = cputicks()
+	t.startTicks = cputicks() //cpu的时间, cpu的时间单位是tick
 	unlock(&ticks.lock)
 }
 
@@ -49,7 +49,7 @@ func (t *ticksType) init() {
 // converting durations, not timestamps. Durations are usually going to be much larger, and so
 // the tiny error doesn't matter. The error is definitely going to be a problem when trying to
 // use this for timestamps, as it'll make those timestamps much less likely to line up.
-const minTimeForTicksPerSecond = 5_000_000*(1-osHasLowResClockInt) + 100_000_000*osHasLowResClockInt
+const minTimeForTicksPerSecond = 5_000_000*(1-osHasLowResClockInt) + 100_000_000*osHasLowResClockInt //最小的时间片段. 大于这个片段才能做计算.
 
 // ticksPerSecond returns a conversion rate between the cputicks clock and the nanotime clock.
 //
@@ -73,7 +73,7 @@ const minTimeForTicksPerSecond = 5_000_000*(1-osHasLowResClockInt) + 100_000_000
 //
 // TODO(mknyszek): This doesn't account for things like CPU frequency scaling. Consider
 // a more sophisticated and general approach in the future.
-func ticksPerSecond() int64 {
+func ticksPerSecond() int64 { // 一秒cpu走过多少个tick.
 	// Get the conversion rate if we've already computed it.
 	r := ticks.val.Load()
 	if r != 0 {
@@ -91,18 +91,18 @@ func ticksPerSecond() int64 {
 
 		// Grab the current time in both clocks.
 		nowTime := nanotime()
-		nowTicks := cputicks()
+		nowTicks := cputicks() //查看现在cpu时间
 
 		// See if we can use these times.
-		if nowTicks > ticks.startTicks && nowTime-ticks.startTime > minTimeForTicksPerSecond {
+		if nowTicks > ticks.startTicks && nowTime-ticks.startTime > minTimeForTicksPerSecond { //如果流逝时间大于最小计算间隔
 			// Perform the calculation with floats. We don't want to risk overflow.
-			r = int64(float64(nowTicks-ticks.startTicks) * 1e9 / float64(nowTime-ticks.startTime))
+			r = int64(float64(nowTicks-ticks.startTicks) * 1e9 / float64(nowTime-ticks.startTime)) // r表示一秒钟走过多少个tick
 			if r == 0 {
 				// Zero is both a sentinel value and it would be bad if callers used this as
 				// a divisor. We tried out best, so just make it 1.
 				r++
 			}
-			ticks.val.Store(r)
+			ticks.val.Store(r) //写入即可.
 			unlock(&ticks.lock)
 			break
 		}
@@ -133,12 +133,12 @@ func syscall_Exit(code int) {
 }
 
 var godebugDefault string
-var godebugUpdate atomic.Pointer[func(string, string)]
-var godebugEnv atomic.Pointer[string] // set by parsedebugvars
+var godebugUpdate atomic.Pointer[func(string, string)] //一个指针,指向一个函数, 这个函数2个入参都是string
+var godebugEnv atomic.Pointer[string]                  // set by parsedebugvars
 var godebugNewIncNonDefault atomic.Pointer[func(string) func()]
 
 //go:linkname godebug_setUpdate internal/godebug.setUpdate
-func godebug_setUpdate(update func(string, string)) {
+func godebug_setUpdate(update func(string, string)) { //把update函数设置给变量godebugUpdate
 	p := new(func(string, string))
 	*p = update
 	godebugUpdate.Store(p)

@@ -11,7 +11,7 @@ import "unsafe"
 // Semacquire waits until *s > 0 and then atomically decrements it.
 // It is intended as a simple sleep primitive for use by the synchronization
 // library and should not be used directly.
-func runtime_Semacquire(s *uint32)
+func runtime_Semacquire(s *uint32) //信号量表示的是可以被利用的资源数,所以我们一直等到大于0,才会进行获取. 获取锁之后信号量--.
 
 // Semacquire(RW)Mutex(R) is like Semacquire, but for profiling contended
 // Mutexes and RWMutexes.

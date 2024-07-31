@@ -27,13 +27,13 @@
 // Called from instrumented code.
 // func runtime·doasanread(addr unsafe.Pointer, sz, sp, pc uintptr)
 TEXT	runtime·doasanread(SB), NOSPLIT, $0-32
-	MOVQ	addr+0(FP), RARG0
+	MOVQ	addr+0(FP), RARG0    //首先我们输入4个参数.把他们都放到寄存器里面.
 	MOVQ	sz+8(FP), RARG1
 	MOVQ	sp+16(FP), RARG2
 	MOVQ	pc+24(FP), RARG3
 	// void __asan_read_go(void *addr, uintptr_t sz, void *sp, void *pc);
-	MOVQ	$__asan_read_go(SB), AX
-	JMP	asancall<>(SB)
+	MOVQ	$__asan_read_go(SB), AX       //__asan_read_go调用这个函数 //这个函数计算addr位置sz大小的内存是否可以访问, 不能访问的话信息写入pc和sp中. 具体实现在src\runtime\asan\asan.go注释中.
+	JMP	asancall<>(SB)      //asancall在本文件73行中. <>表示这个函数只有本文件可以使用.//表示继续使用AX里面的函数.而AX上一行我们放入了这个__asan_read_go函数,所以本行用来启动这个c函数.
 
 // func runtime·doasanwrite(addr unsafe.Pointer, sz, sp, pc uintptr)
 TEXT	runtime·doasanwrite(SB), NOSPLIT, $0-32
@@ -71,7 +71,7 @@ TEXT	runtime·asanregisterglobals(SB), NOSPLIT, $0-16
 
 // Switches SP to g0 stack and calls (AX). Arguments already set.
 TEXT	asancall<>(SB), NOSPLIT, $0-0
-	get_tls(R12)
+	get_tls(R12)      //get_tls是一个宏.参见readme里面汇编部分.
 	MOVQ	g(R12), R14
 	MOVQ	SP, R12		// callee-saved, preserved across the CALL
 	CMPQ	R14, $0
@@ -85,7 +85,7 @@ TEXT	asancall<>(SB), NOSPLIT, $0-0
 
 	MOVQ	(g_sched+gobuf_sp)(R10), SP
 call:
-	ANDQ	$~15, SP	// alignment for gcc ABI
+	ANDQ	$~15, SP	// alignment for gcc ABI      // $~15 :$是立即数, ~按位取反 !逻辑取反
 	CALL	AX
 	MOVQ	R12, SP
 	RET

@@ -18,7 +18,7 @@ import (
 // RegArgs also contains additional space to hold pointers
 // when it may not be safe to keep them only in the integer
 // register space otherwise.
-type RegArgs struct { //这个类用来刻画寄存器的情况.
+type RegArgs struct { //这个类用来刻画寄存器的情况.//保存了寄存器的所有值.
 	// Values in these slots should be precisely the bit-by-bit
 	// representation of how they would appear in a register.
 	//
@@ -35,7 +35,7 @@ type RegArgs struct { //这个类用来刻画寄存器的情况.
 	// Ptrs is a space that duplicates Ints but with pointer type,
 	// used to make pointers passed or returned  in registers
 	// visible to the GC by making the type unsafe.Pointer.
-	Ptrs [IntArgRegs]unsafe.Pointer //指针也用整数寄存器来保存.
+	Ptrs [IntArgRegs]unsafe.Pointer //也是表示Ints. 但是存指针.
 
 	// ReturnIsPtr is a bitmap that indicates which registers
 	// contain or will contain pointers on the return path from

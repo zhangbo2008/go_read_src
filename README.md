@@ -140,6 +140,24 @@ func Sum(x, y int) int
 ```
 
 
+一些常用汇编指令表:
+movb（8位）、movw（16位）、movl（32位）、movq（64位）//因为32位计算机, 指针是32位的所以我们读取变量使用movl
+
+更复杂的go汇编指令可以参考这个网站,建议后续汇编代码遇到了回来查:
+https://www.quasilyte.dev/blog/post/go-asm-complementary-reference/
+
+比如movo= movdqa 移动双四字节 dq表示128位.所以movo表示对齐移动128位
+
+AESENC: AESENC和AESENCLAST
+这两条指令是AESNI中用于加密的指令，也是最容易理解的指令。任何SIMD指令都可以参考Intel® Intrinsics Guide，AESENC对输入依次进行ShiftRows，SubBytes，MixColumns，AddRoundKey操作。其中SubBytes是对字节的操作，因此可以和ShiftRows互换，与上面的图比较，可以发现AESENC恰好是上图的一个普通轮加密。
+
+AESENCLAST对输入依次进行ShiftRows，SubBytes，AddRoundKey操作，相当于上图的尾轮加密。
+
+
+32位系统和64位系统汇编函数传值的区别:
+https://blog.csdn.net/song_lee/article/details/105297902
+注意32位是用栈来传,64位是用寄存器来传值.所以同样一个代码64位比32位跑的快多了.
+
 内存结构图:
 <img src='huibian1.png'>
 通过图很容易看出来ret的地址就是+16(fp)
@@ -315,7 +333,7 @@ A good general rule of thumb is to define all non-RODATA symbols in Go instead o
 
 
 
-BYTE语法:
+BYTE语法:byte就是往汇编里面放入机器码
 Placing data in the instruction stream, say for interrupt vectors, is easy: the
 pseudo-instructions LONG and WORD (but not BYTE) lay down the value of their
 single argument, of the appropriate size, as if it were an instruction:
@@ -1372,19 +1390,139 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 		# src\reflect\swapper.go
 			Swapper returns a function that swaps the elements in the provided
 			slice.
+			给一个slice,然后swapper返回一个函数,这个函数可以交换里面的元素.
+		# src\reflect\deepequal.go
+			判定两个value是否深度相等. 至于深度相等的定义可以看这个代码里面的注释. 基本可以看做严格相等.
+
+
+		# src\reflect\asm_amd64.s
+			定义了2个函数·makeFuncStub  ·methodValueCall 他俩用在src\reflect\makefunc.go里面.
+
+
+		# src\reflect\makefunc.go
+			MakeFunc把一个函数fn进行了包装,返回一个reflect.Value对象.
+			makeMethodValue把reflect.Value包装成makeFuncImpl对象.
+
+		# src\internal\intern\intern.go
+			使用一个map的value来把保存任意对象.
+
+		# src\internal\itoa\itoa.go
+			int转string(这个itoa里面a表示ascii码数组,所以就是string)
+
+
+		# src\internal\lazyregexp\lazyre.go
+			把re封装了一个once.Do, 保证只有第一次调用任何匹配方法时候才进行compile.
+		# src\internal\lazytemplate\lazytemplate.go
+			跟上一个go文件同理
+
+		# src\internal\poll\fd_fsync_windows.go
+			file syncronize 文件同步为了避免缓存中的数据还没有写入到磁盘就宕机导致的数据丢失，就需要使用fsync或这fdatasync来保证数据成功写入磁盘。
+
+		# src\internal\poll\fd_io_plan9.go
+			异步io的读写,可以让另外一个进程来暂停其他进程的异步io读写.
+		# src\internal\poll\fd_mutex.go
+			文件描述符的锁,主要是读写锁的加锁解锁.
+		# src\internal\poll\fd_plan9.go
+			封装了fd_mutex的锁的fd类,可以并发读写.
+		# src\internal\poll\fd_windows.go
+			windows系统下的并发读写.
+		# src\internal\poll\fd_poll_runtime.go
+			利用runtime库来实现poll功能.
+
+
+		# 下面我们首先学习go runtime, 他是一个go语言跟system调用的中间层.本着从用户层到内核层的原则,我们先学习runtime库包.因为比较底层,go语言教程一般不学runtime的使用.所以我们先来复习runtime的基本使用方法.
+		https://blog.csdn.net/pyf09/article/details/113867102
+		里面一些核心概念的总结:
+		Golang调度:PMG模型,P是processor.M是multithread.G是goroutine.
+		正是因为G足够小,所以切换成本很低.
+		线程的运行, 其实是被运行. 其阻塞, 其实是切换出调度队列, 不再去调度执行这个执行流. 其他执行流满足其条件, 便会把被移出调度队列的执行流重新放回调度队列.
+		理解了阻塞的真正含义, 也就知道能够比较容易理解, 为什么go的锁, channel这些不阻塞线程. 对于实现的同步执行流效果, 又不阻塞线程的网络
+
+
+		src\runtime\HACKING.md
+		官方的runtime文档
+
+
+		下面分析runtime源码
+		src\runtime\internal\atomic\atomic_amd64.go
+		src\runtime\internal\atomic\atomic_amd64.s
+			利用汇编的元操作来实现.
+		src\runtime\internal\atomic\types.go
+			上面的元操作再包一层封装
+		src\runtime\internal\math\math.go
+			带overflow判断的加法和乘法.
+
+		src\runtime\internal\sys\intrinsics.go
+			一些二进制的计算.
+		src\runtime\internal\sys\nih.go
+			空类型.
+
+		src\runtime\internal\syscall\asm_linux_amd64.s
+			系统调用·Syscall6来实现6个参数的linux系统调用的封装.
+		src\runtime\internal\syscall\syscall_linux.go
+			对于syscall的封装,底层还是syscall6来实现.
+		src\runtime\cgo
+			提供c/c++跟go的交互,这里不展开.
+
+		src\runtime\asan.go
+		src\runtime\asan_amd64.s
+		src\runtime\asan0.go
+			这种后缀带0的表示系统如果不支持asan技术的话,应该如何写这些处理函数.这里处理方法是跑出异常.
+			内存错误分析工具----asan(AddressSanitizer)
+			底层函数:getcallerpc,getcallersp由编译器给出.
+			// getcallerpc returns the program counter (PC) of its caller's caller.
+			// getcallersp returns the stack pointer (SP) of its caller's caller.
+			// The implementation may be a compiler intrinsic; there is not
+			// necessarily code implementing this on every platform.
+			//
+			// For example:
+			//
+			//	func f(arg1, arg2, arg3 int) {
+			//		pc := getcallerpc()
+			//		sp := getcallersp()
+			//	}
+			doasanread:是一个底层函数他判断给的addr读取size是否合法,底层用的c语言的__asan_read_go函数.
+			其他src\runtime\asan_amd64.s中的函数都跟这个函数类似.
+
+		src\runtime\asm_amd64.s
+		提供了runtime里面的汇编代码.包括main函数,哈希算法,go携程实现等.比较长,可以看到其他go代码调用底层时候再找进来读细节比较轻松一点.
+		注意这个系统的寄存器和abi寄存器的对应关系.
+		// We need to convert to the syscall ABI.
+		//
+		// arg | ABIInternal | Syscall
+		// ---------------------------
+		// num | AX          | AX
+		// a1  | BX          | DI
+		// a2  | CX          | SI
+		// a3  | DI          | DX
+		// a4  | SI          | R10
+		// a5  | R8          | R8
+		// a6  | R9          | R9
+		//
+		// r1  | AX          | AX
+		// r2  | BX          | DX
+		// err | CX          | part of AX
+		https://blog.csdn.net/song_lee/article/details/105297902
+		这里面我们知道:
+		64 位系统寄存器的作用，64 位程序的前六个参数通过 RDI、RSI、RDX、RCX、R8 和 R9 传递
+		所以我们对于代码
+		// func memhash(p unsafe.Pointer, h, s uintptr) uintptr
+		// hash function using AES hardware instructions
+		TEXT runtime·memhash<ABIInternal>(SB),NOSPLIT,$0-32
+			// AX = ptr to data
+			// BX = seed
+			// CX = size
+			CMPB	runtime·useAeshash(SB), $0    //比较字节
+			JEQ	noaes
+			JMP	aeshashbody<>(SB)     //1228行
+		noaes:
+			JMP	runtime·memhashFallback<ABIInternal>(SB)
+		这里面写的AX不是第一个参数而是返回值. 所以对应memhash函数里面的返回值uintptr.
+		h是第一个参数所以参考上面表格知道他直接写入bx寄存器, s是第二个参数所以他写入cx寄存器.
+		所以我们在memhash中访问bx,cx就直接访问了seed和size. 而AX是数据指针也是返回值的地址.
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+		src\runtime\runtime.go
+			定义了时间相关的类型.

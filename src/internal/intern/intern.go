@@ -19,17 +19,17 @@ import (
 
 // A Value pointer is the handle to an underlying comparable value.
 // See func Get for how Value pointers may be used.
-type Value struct {
+type Value struct { //这个类表示 可以被比较的类型
 	_      [0]func() // prevent people from accidentally using value type as comparable
-	cmpVal any
+	cmpVal any       // 记录底层数据
 	// resurrected is guarded by mu (for all instances of Value).
 	// It is set true whenever v is synthesized from a uintptr.
-	resurrected bool
+	resurrected bool //这个字段表示这个在被使用中. finalize中再设置成false
 }
 
 // Get returns the comparable value passed to the Get func
 // that returned v.
-func (v *Value) Get() any { return v.cmpVal }
+func (v *Value) Get() any { return v.cmpVal } //返回底层数据
 
 // key is a key in our global value map.
 // It contains type-specialized fields to avoid allocations
@@ -43,7 +43,7 @@ type key struct {
 }
 
 // keyFor returns a key to use with cmpVal.
-func keyFor(cmpVal any) key {
+func keyFor(cmpVal any) key { // 把一个any包装成key类型.
 	if s, ok := cmpVal.(string); ok {
 		return key{s: s, isString: true}
 	}
@@ -51,7 +51,7 @@ func keyFor(cmpVal any) key {
 }
 
 // Value returns a *Value built from k.
-func (k key) Value() *Value {
+func (k key) Value() *Value { //把key转为value
 	if k.isString {
 		return &Value{cmpVal: k.s}
 	}
@@ -62,8 +62,8 @@ var (
 	// mu guards valMap, a weakref map of *Value by underlying value.
 	// It also guards the resurrected field of all *Values.
 	mu      sync.Mutex
-	valMap  = map[key]uintptr{} // to uintptr(*Value)
-	valSafe = safeMap()         // non-nil in safe+leaky mode
+	valMap  = map[key]uintptr{} // to uintptr(*Value) //保存key value的值.
+	valSafe = safeMap()         // non-nil in safe+leaky mode//一个mapp来表示mode
 )
 
 var intern = godebug.New("#intern")
@@ -102,9 +102,9 @@ func get(k key) *Value {
 	defer mu.Unlock()
 
 	var v *Value
-	if valSafe != nil {
+	if valSafe != nil { //leaky模式,用valsafe, 否则用valmap
 		v = valSafe[k]
-	} else if addr, ok := valMap[k]; ok {
+	} else if addr, ok := valMap[k]; ok { //valMap保存的是指针,所以先*Value转化指针.
 		v = (*Value)(unsafe.Pointer(addr))
 		v.resurrected = true
 	}
@@ -112,7 +112,7 @@ func get(k key) *Value {
 		return v
 	}
 	v = k.Value()
-	if valSafe != nil {
+	if valSafe != nil { //写入valsafe
 		valSafe[k] = v
 	} else {
 		// SetFinalizer before uintptr conversion (theoretical concern;

@@ -6,6 +6,7 @@
 // described in RFC 8878. It does not support dictionaries.
 package zstd
 
+//Zstandard，或“zstd”（发音为“zee standard”），是一种无损数据压缩机制。
 import (
 	"encoding/binary"
 	"errors"

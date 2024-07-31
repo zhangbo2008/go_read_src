@@ -38,7 +38,7 @@ func LeadingZeros64(x uint64) int { return 64 - Len64(x) }
 
 // --- TrailingZeros ---
 
-// See http://supertech.csail.mit.edu/papers/debruijn.pdf
+// See http://supertech.csail.mit.edu/papers/debruijn.pdf //https://www.cnblogs.com/brighthoo/p/10649588.html 算一个二进制末尾0的个数的算法叫debruijn
 const deBruijn32 = 0x077CB531
 
 var deBruijn32tab = [32]byte{

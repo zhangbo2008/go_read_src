@@ -17,11 +17,11 @@ const (
 )
 
 func memhash0(p unsafe.Pointer, h uintptr) uintptr {
-	return h
+	return h //后面的0就表示不进行哈希.所以输入h,返回还是h
 }
 
 func memhash8(p unsafe.Pointer, h uintptr) uintptr {
-	return memhash(p, h, 1)
+	return memhash(p, h, 1) //src\runtime\asm_amd64.s:1202   p是函数的数据指针  h: seed   1:size:输出的字节数
 }
 
 func memhash16(p unsafe.Pointer, h uintptr) uintptr {
@@ -33,9 +33,9 @@ func memhash128(p unsafe.Pointer, h uintptr) uintptr {
 }
 
 //go:nosplit
-func memhash_varlen(p unsafe.Pointer, h uintptr) uintptr {
+func memhash_varlen(p unsafe.Pointer, h uintptr) uintptr { //变长的哈希算法
 	ptr := getclosureptr()
-	size := *(*uintptr)(unsafe.Pointer(ptr + unsafe.Sizeof(h)))
+	size := *(*uintptr)(unsafe.Pointer(ptr + unsafe.Sizeof(h))) //读取地址后面一个uint指针的数据作为size
 	return memhash(p, h, size)
 }
 
@@ -68,7 +68,7 @@ func f32hash(p unsafe.Pointer, h uintptr) uintptr {
 	case f != f:
 		return c1 * (c0 ^ h ^ uintptr(rand())) // any kind of NaN
 	default:
-		return memhash(p, h, 4)
+		return memhash(p, h, 4) //f32长度为4字节.所以最后size=4
 	}
 }
 
@@ -94,8 +94,8 @@ func c128hash(p unsafe.Pointer, h uintptr) uintptr {
 	return f64hash(unsafe.Pointer(&x[1]), f64hash(unsafe.Pointer(&x[0]), h))
 }
 
-func interhash(p unsafe.Pointer, h uintptr) uintptr {
-	a := (*iface)(p)
+func interhash(p unsafe.Pointer, h uintptr) uintptr { //接口进行哈希.
+	a := (*iface)(p) //iface是运行时的接口的类型. runtime2.go定义了运行时的所有对象.非常重要.其中iface就是接口类型.
 	tab := a.tab
 	if tab == nil {
 		return h

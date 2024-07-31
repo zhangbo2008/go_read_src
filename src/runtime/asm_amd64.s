@@ -13,8 +13,8 @@
 // kernel for an ordinary -buildmode=exe program. The stack holds the
 // number of arguments and the C-style argv.
 TEXT _rt0_amd64(SB),NOSPLIT,$-8
-	MOVQ	0(SP), DI	// argc
-	LEAQ	8(SP), SI	// argv
+	MOVQ	0(SP), DI	// argc       //把sp里面保存的值放入DI
+	LEAQ	8(SP), SI	// argv      //把sp+8地址放入SI里面.
 	JMP	runtime·rt0_go(SB)
 
 // main is common startup code for most amd64 systems when using
@@ -160,8 +160,8 @@ TEXT runtime·rt0_go(SB),NOSPLIT|NOFRAME|TOPFRAME,$0
 	// copy arguments forward on an even stack
 	MOVQ	DI, AX		// argc
 	MOVQ	SI, BX		// argv
-	SUBQ	$(5*8), SP		// 3args 2auto
-	ANDQ	$~15, SP
+	SUBQ	$(5*8), SP		// 3args 2auto    //这个函数需要5个局部变量,所以开辟40空间.
+	ANDQ	$~15, SP    //aligned to a 16-byte boundary.//AND 指令在两个操作数的对应位之间进行（按位）逻辑与（AND）操作，并将结果存放在目标操作数中：  ~15就是 0xffffffff0. ~是按位取反.
 	MOVQ	AX, 24(SP)
 	MOVQ	BX, 32(SP)
 
@@ -1203,9 +1203,9 @@ TEXT runtime·memhash<ABIInternal>(SB),NOSPLIT,$0-32
 	// AX = ptr to data
 	// BX = seed
 	// CX = size
-	CMPB	runtime·useAeshash(SB), $0
+	CMPB	runtime·useAeshash(SB), $0    //比较字节
 	JEQ	noaes
-	JMP	aeshashbody<>(SB)
+	JMP	aeshashbody<>(SB)     //1228行
 noaes:
 	JMP	runtime·memhashFallback<ABIInternal>(SB)
 
@@ -1230,7 +1230,7 @@ TEXT aeshashbody<>(SB),NOSPLIT,$0-0
 	MOVQ	BX, X0				// 64 bits of per-table hash seed
 	PINSRW	$4, CX, X0			// 16 bits of length
 	PSHUFHW $0, X0, X0			// repeat length 4 times total
-	MOVO	X0, X1				// save unscrambled seed
+	MOVO	X0, X1				// save unscrambled seed //对齐移动128位数据
 	PXOR	runtime·aeskeysched(SB), X0	// xor in per-process seed
 	AESENC	X0, X0				// scramble seed
 

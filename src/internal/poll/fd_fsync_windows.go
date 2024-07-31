@@ -8,7 +8,7 @@ import "syscall"
 
 // Fsync wraps syscall.Fsync.
 func (fd *FD) Fsync() error {
-	if err := fd.incref(); err != nil {
+	if err := fd.incref(); err != nil { //添加引用计数.
 		return err
 	}
 	defer fd.decref()

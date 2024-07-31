@@ -70,7 +70,7 @@ type value struct {
 // To disable that panic for access to an undocumented setting,
 // prefix the name with a #, as in godebug.New("#gofsystrace").
 // The # is a signal to New but not part of the key used in $GODEBUG.
-func New(name string) *Setting {
+func New(name string) *Setting { //设置一个新的godebug变量.
 	return &Setting{name: name}
 }
 

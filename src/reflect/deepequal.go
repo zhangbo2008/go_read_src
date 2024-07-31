@@ -15,7 +15,7 @@ import (
 // in progress. The comparison algorithm assumes that all
 // checks in progress are true when it reencounters them.
 // Visited comparisons are stored in a map indexed by visit.
-type visit struct {
+type visit struct { // visited是一个map, 里面的key是visit对象.每一个visit对象都是两个指针,和他们的指针类型. 其中a1表示被比较的第一个元素, a2表示被比较的第二个元素. 如果我们比较过这两个值,那么就在visitedmap里面设置这个key的value为true
 	a1  unsafe.Pointer
 	a2  unsafe.Pointer
 	typ Type
@@ -36,7 +36,7 @@ func deepValueEqual(v1, v2 Value, visited map[visit]bool) bool {
 	// For any possible reference cycle that might be encountered,
 	// hard(v1, v2) needs to return true for at least one of the types in the cycle,
 	// and it's safe and valid to get Value's internal pointer.
-	hard := func(v1, v2 Value) bool {
+	hard := func(v1, v2 Value) bool { //hard函数用来判断是否存在引用循环.
 		switch v1.Kind() {
 		case Pointer:
 			if v1.typ().PtrBytes == 0 {
@@ -47,7 +47,7 @@ func deepValueEqual(v1, v2 Value, visited map[visit]bool) bool {
 				// all empty structs.
 				return false
 			}
-			fallthrough
+			fallthrough // fallthrough：Go里面switch默认相当于每个case最后带有break，匹配成功后不会自动向下执行其他case，而是跳出整个switch, 但是可以使用fallthrough强制执行后面的case代码。 效果就是如果 v1.typ().ptrBytes!=0, 那么执行53行.
 		case Map, Slice, Interface:
 			// Nil pointers cannot be cyclic. Avoid putting them in the visited map.
 			return !v1.IsNil() && !v2.IsNil()
@@ -60,15 +60,15 @@ func deepValueEqual(v1, v2 Value, visited map[visit]bool) bool {
 		// which we do by calling the pointer method.
 		// For Slice or Interface, flagIndir is always set,
 		// and using v.ptr suffices.
-		ptrval := func(v Value) unsafe.Pointer {
+		ptrval := func(v Value) unsafe.Pointer { //ptrval这个函数传入一个value v, 输出他的底层指针.
 			switch v.Kind() {
 			case Pointer, Map:
-				return v.pointer()
+				return v.pointer() //pointer底层就是检测flagindir:全称flagindirect. 也就是用指针来表示数据.
 			default:
 				return v.ptr
 			}
 		}
-		addr1 := ptrval(v1)
+		addr1 := ptrval(v1) //得到2个指针.
 		addr2 := ptrval(v2)
 		if uintptr(addr1) > uintptr(addr2) {
 			// Canonicalize order to reduce number of entries in visited.
@@ -80,7 +80,7 @@ func deepValueEqual(v1, v2 Value, visited map[visit]bool) bool {
 		typ := v1.Type()
 		v := visit{addr1, addr2, typ}
 		if visited[v] {
-			return true
+			return true // 这里直接返回true因为87行设置了之前访问过,所以形成了一个引用循环.返回true.因为这是深度相等的.如果不是深度相等在这次循环中已经触发过return false了.
 		}
 
 		// Remember for later.
@@ -89,7 +89,7 @@ func deepValueEqual(v1, v2 Value, visited map[visit]bool) bool {
 
 	switch v1.Kind() {
 	case Array:
-		for i := 0; i < v1.Len(); i++ {
+		for i := 0; i < v1.Len(); i++ { //对于数组,比较租个元素是否deepvalueequal
 			if !deepValueEqual(v1.Index(i), v2.Index(i), visited) {
 				return false
 			}
@@ -226,7 +226,7 @@ func deepValueEqual(v1, v2 Value, visited map[visit]bool) bool {
 // values that have been compared before, it treats the values as
 // equal rather than examining the values to which they point.
 // This ensures that DeepEqual terminates.
-func DeepEqual(x, y any) bool {
+func DeepEqual(x, y any) bool { //判定两个值是否深度相等.也就是严格的相等.
 	if x == nil || y == nil {
 		return x == y
 	}

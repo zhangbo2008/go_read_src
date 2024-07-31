@@ -34,7 +34,7 @@ const (
 	mutexWMask   = (1<<20 - 1) << 43
 )
 
-const overflowMsg = "too many concurrent operations on a single file or socket (max 1048575)"
+const overflowMsg = "too many concurrent operations on a single file or socket (max 1048575)" // 下面给出这个最大值的计算. mutexRMask(的表示的数量,他由23个1组成.)是记录read waiter的数量, 而我们每次添加的大小是mutexRef 也就是8. 所以我们数量是 2**23/8-1=1048575
 
 // Read operations must do rwlock(true)/rwunlock(true).
 //
@@ -50,17 +50,17 @@ const overflowMsg = "too many concurrent operations on a single file or socket (
 
 // incref adds a reference to mu.
 // It reports whether mu is available for reading or writing.
-func (mu *fdMutex) incref() bool {
+func (mu *fdMutex) incref() bool { //给mu加引用.
 	for {
 		old := atomic.LoadUint64(&mu.state)
-		if old&mutexClosed != 0 {
+		if old&mutexClosed != 0 { //查询fd是否关闭,已经关闭了那么就直接return false
 			return false
 		}
 		new := old + mutexRef
 		if new&mutexRefMask == 0 {
 			panic(overflowMsg)
 		}
-		if atomic.CompareAndSwapUint64(&mu.state, old, new) {
+		if atomic.CompareAndSwapUint64(&mu.state, old, new) { //cas 保证了原子操作.
 			return true
 		}
 	}
@@ -75,7 +75,7 @@ func (mu *fdMutex) increfAndClose() bool {
 			return false
 		}
 		// Mark as closed and acquire a reference.
-		new := (old | mutexClosed) + mutexRef
+		new := (old | mutexClosed) + mutexRef //标记为关闭,因为我们函数名字就叫添加ref,并且关闭fd.
 		if new&mutexRefMask == 0 {
 			panic(overflowMsg)
 		}
@@ -86,11 +86,11 @@ func (mu *fdMutex) increfAndClose() bool {
 			// they will observe closed flag after wakeup.
 			for old&mutexRMask != 0 {
 				old -= mutexRWait
-				runtime_Semrelease(&mu.rsema)
+				runtime_Semrelease(&mu.rsema) //释放读的信号量
 			}
 			for old&mutexWMask != 0 {
 				old -= mutexWWait
-				runtime_Semrelease(&mu.wsema)
+				runtime_Semrelease(&mu.wsema) //释放写信号量.
 			}
 			return true
 		}
@@ -113,7 +113,7 @@ func (mu *fdMutex) decref() bool {
 }
 
 // lock adds a reference to mu and locks mu.
-// It reports whether mu is available for reading or writing.
+// It reports whether mu is available for reading or writing.// mu添加索引, 然后锁上mu
 func (mu *fdMutex) rwlock(read bool) bool {
 	var mutexBit, mutexWait, mutexMask uint64
 	var mutexSema *uint32
@@ -134,24 +134,24 @@ func (mu *fdMutex) rwlock(read bool) bool {
 			return false
 		}
 		var new uint64
-		if old&mutexBit == 0 {
+		if old&mutexBit == 0 { //还没锁上,那么就139行锁上.
 			// Lock is free, acquire it.
 			new = (old | mutexBit) + mutexRef
 			if new&mutexRefMask == 0 {
 				panic(overflowMsg)
 			}
 		} else {
-			// Wait for lock.
+			// Wait for lock.//已经锁上了, 状态加wait
 			new = old + mutexWait
 			if new&mutexMask == 0 {
 				panic(overflowMsg)
 			}
 		}
 		if atomic.CompareAndSwapUint64(&mu.state, old, new) {
-			if old&mutexBit == 0 {
+			if old&mutexBit == 0 { //旧的能获得锁, 说明我们成功了.
 				return true
 			}
-			runtime_Semacquire(mutexSema)
+			runtime_Semacquire(mutexSema) //没成功就继续获得信号.
 			// The signaller has subtracted mutexWait.
 		}
 	}
@@ -193,7 +193,7 @@ func (mu *fdMutex) rwunlock(read bool) bool {
 }
 
 // Implemented in runtime package.
-func runtime_Semacquire(sema *uint32)
+func runtime_Semacquire(sema *uint32) //src\sync\runtime.go:14 至于更底层的汇编实现这个信号量锁的操作我们留到后面.
 func runtime_Semrelease(sema *uint32)
 
 // incref adds a reference to fd.

@@ -24,7 +24,7 @@
 //
 // Note that this differs from "standard" ABI convention, which would pass 4th
 // arg in CX, not R10.
-TEXT ·Syscall6<ABIInternal>(SB),NOSPLIT,$0
+TEXT ·Syscall6<ABIInternal>(SB),NOSPLIT,$0 //执行6个参数的系统调用 a1到a6, 上面的表表示abi的调用和系统调用之间的寄存器使用的不同,所以需要这个syscall6函数来做中转.//注意到a5,a6都能对应上,所以不需要中转了.不需要mov函数了.
 	// a6 already in R9.
 	// a5 already in R8.
 	MOVQ	SI, R10 // a4
@@ -42,6 +42,6 @@ TEXT ·Syscall6<ABIInternal>(SB),NOSPLIT,$0
 	RET
 ok:
 	// r1 already in AX.
-	MOVQ	DX, BX // r2
+	MOVQ	DX, BX // r2 //运行成功了.对应的寄存器中转一下.
 	MOVQ	$0, CX // errno
 	RET

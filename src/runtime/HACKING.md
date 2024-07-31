@@ -37,6 +37,7 @@ system call, it returns its P to the idle P pool. In order to resume
 executing user Go code, for example on return from a system call, it
 must acquire a P from the idle pool.
 
+
 All `g`, `m`, and `p` objects are heap allocated, but are never freed,
 so their memory remains type stable. As a result, the runtime can
 avoid write barriers in the depths of the scheduler.
@@ -49,6 +50,9 @@ To get the current user `g`, use `getg().m.curg`.
 `getg()` alone returns the current `g`, but when executing on the
 system or signal stacks, this will return the current M's "g0" or
 "gsignal", respectively. This is usually not what you want.
+如果用getg函数那么返回的不是你想要的.他返回的是M的g0.
+
+
 
 To determine if you're running on the user stack or the system stack,
 use `getg() == getg().m.curg`.
@@ -58,7 +62,7 @@ Stacks
 
 Every non-dead G has a *user stack* associated with it, which is what
 user Go code executes on. User stacks start small (e.g., 2K) and grow
-or shrink dynamically.
+or shrink dynamically.每一个G都有一个user stack.
 
 Every M has a *system stack* associated with it (also known as the M's
 "g0" stack because it's implemented as a stub G) and, on Unix
@@ -73,7 +77,7 @@ be preempted, that must not grow the user stack, or that switch user
 goroutines. Code running on the system stack is implicitly
 non-preemptible and the garbage collector does not scan system stacks.
 While running on the system stack, the current user stack is not used
-for execution.
+for execution. 系统栈上的代码运行不能被抢占.
 
 nosplit functions
 -----------------
@@ -116,7 +120,7 @@ Most errors in the runtime are not recoverable. For these, use
 process. In general, `throw` should be passed a string constant to
 avoid allocating in perilous situations. By convention, additional
 details are printed before `throw` using `print` or `println` and the
-messages are prefixed with "runtime:".
+messages are prefixed with "runtime:".// dump的不可恢复.
 
 For unrecoverable errors where user code is expected to be at fault for the
 failure (such as racing map writes), use `fatal`.
@@ -141,6 +145,7 @@ periods. Blocking on a `mutex` directly blocks the M, without
 interacting with the Go scheduler. This means it is safe to use from
 the lowest levels of the runtime, but also prevents any associated G
 and P from being rescheduled. `rwmutex` is similar.
+mutex阻塞M,直到调度器交互.
 
 For one-shot notifications, use `note`, which provides `notesleep` and
 `notewakeup`. Unlike traditional UNIX `sleep`/`wakeup`, `note`s are

@@ -2823,7 +2823,7 @@ func ifaceIndir(t *abi.Type) bool {
 
 // Note: this type must agree with runtime.bitvector.
 type bitVector struct {
-	n    uint32 // number of bits
+	n    uint32 // number of bits// 记录一下data大小.不用len更快计算数量.
 	data []byte
 }
 
