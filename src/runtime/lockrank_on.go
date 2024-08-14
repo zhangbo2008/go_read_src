@@ -29,7 +29,7 @@ type lockRankStruct struct {
 // lockInit(l *mutex, rank int) sets the rank of lock before it is used.
 // If there is no clear place to initialize a lock, then the rank of a lock can be
 // specified during the lock call itself via lockWithRank(l *mutex, rank int).
-func lockInit(l *mutex, rank lockRank) {
+func lockInit(l *mutex, rank lockRank) { //设置l的rank字段为rank
 	l.rank = rank
 }
 
@@ -50,7 +50,7 @@ func getLockRank(l *mutex) lockRank {
 // we record an accurate lock ordering. e.g., without systemstack, a stack
 // split on entry to lock2() would record stack split locks as taken after l,
 // even though l is not actually locked yet.
-func lockWithRank(l *mutex, rank lockRank) {
+func lockWithRank(l *mutex, rank lockRank) { // 进程获得锁l, 并且设置l为rank级别.
 	if l == &debuglock || l == &paniclk || l == &raceFiniLock {
 		// debuglock is only used for println/printlock(). Don't do lock
 		// rank recording for it, since print/println are used when
@@ -78,7 +78,7 @@ func lockWithRank(l *mutex, rank lockRank) {
 		if i >= len(gp.m.locksHeld) {
 			throw("too many locks held concurrently for rank checking")
 		}
-		gp.m.locksHeld[i].rank = rank
+		gp.m.locksHeld[i].rank = rank //最后一个写入新的rank
 		gp.m.locksHeld[i].lockAddr = uintptr(unsafe.Pointer(l))
 		gp.m.locksHeldLen++
 

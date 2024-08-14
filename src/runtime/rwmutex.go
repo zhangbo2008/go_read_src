@@ -8,13 +8,13 @@ import (
 	"runtime/internal/atomic"
 )
 
-// This is a copy of sync/rwmutex.go rewritten to work in the runtime.
+// This is a copy of sync/rwmutex.go rewritten to work in the runtime.把之前的rwmutex.go重新写成runtime的版本.让这个锁可以在ruantime中使用.
 
 // A rwmutex is a reader/writer mutual exclusion lock.
 // The lock can be held by an arbitrary number of readers or a single writer.
 // This is a variant of sync.RWMutex, for the runtime package.
 // Like mutex, rwmutex blocks the calling M.
-// It does not interact with the goroutine scheduler.
+// It does not interact with the goroutine scheduler. 锁可以被一堆读和一个写来获取.
 type rwmutex struct {
 	rLock      mutex    // protects readers, readerPass, writer
 	readers    muintptr // list of pending readers
@@ -26,7 +26,7 @@ type rwmutex struct {
 	readerCount atomic.Int32 // number of pending readers
 	readerWait  atomic.Int32 // number of departing readers
 
-	readRank  lockRank // semantic lock rank for read locking
+	readRank lockRank // semantic lock rank for read locking
 }
 
 // Lock ranking an rwmutex has two aspects:
@@ -34,11 +34,11 @@ type rwmutex struct {
 // Semantic ranking: this rwmutex represents some higher level lock that
 // protects some resource (e.g., allocmLock protects creation of new Ms). The
 // read and write locks of that resource need to be represented in the lock
-// rank.
+// rank.//语义上: 比如读写锁需要保护创建M的锁
 //
 // Internal ranking: as an implementation detail, rwmutex uses two mutexes:
 // rLock and wLock. These have lock order requirements: wLock must be locked
-// before rLock. This also needs to be represented in the lock rank.
+// before rLock. This also needs to be represented in the lock rank.//写锁要优先锁上.
 //
 // Semantic ranking is represented by acquiring readRank during read lock and
 // writeRank during write lock.
@@ -50,17 +50,17 @@ type rwmutex struct {
 // acquire of readRank for the duration of a read lock.
 //
 // The lock ranking must document this ordering:
-// - readRankInternal is a leaf lock.
-// - readRank is taken before readRankInternal.
-// - writeRank is taken before readRankInternal.
-// - readRank is placed in the lock order wherever a read lock of this rwmutex
-//   belongs.
-// - writeRank is placed in the lock order wherever a write lock of this
-//   rwmutex belongs.
+//   - readRankInternal is a leaf lock.
+//   - readRank is taken before readRankInternal.
+//   - writeRank is taken before readRankInternal.
+//   - readRank is placed in the lock order wherever a read lock of this rwmutex
+//     belongs.
+//   - writeRank is placed in the lock order wherever a write lock of this
+//     rwmutex belongs.
 func (rw *rwmutex) init(readRank, readRankInternal, writeRank lockRank) {
 	rw.readRank = readRank
 
-	lockInit(&rw.rLock, readRankInternal)
+	lockInit(&rw.rLock, readRankInternal) //src\runtime\lockrank_on.go:32 把后面的rank写入前面的rLock锁里面.
 	lockInit(&rw.wLock, writeRank)
 }
 

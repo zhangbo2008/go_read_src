@@ -270,7 +270,7 @@ const ( //这些个flag表示chan方向.
 )
 
 // ChanType represents a channel type
-type ChanType struct { // channel 比数组多维护一个dir属性.
+type ChanType struct { // channel 比数组多维护一个dir属性. dir用来表示channel的方向.
 	Type
 	Elem *Type
 	Dir  ChanDir

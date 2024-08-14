@@ -53,13 +53,13 @@ func gotraceback() (level int32, all, crash bool) {
 
 var (
 	argc int32
-	argv **byte
+	argv **byte //argv是 *byte的数组. *byte看做string
 )
 
 // nosplit for use in linux startup sysargs.
 //
 //go:nosplit
-func argv_index(argv **byte, i int32) *byte {
+func argv_index(argv **byte, i int32) *byte { //读取argv 中索引为i的字符串.
 	return *(**byte)(add(unsafe.Pointer(argv), uintptr(i)*goarch.PtrSize))
 }
 
@@ -306,7 +306,7 @@ type dbgVar struct {
 // except for "memprofilerate" since there is an
 // existing int var for that value, which may
 // already have an initial value.
-var debug struct {
+var debug struct { //godebug的变量值
 	cgocheck                int32
 	clobberfree             int32
 	disablethp              int32
@@ -578,7 +578,7 @@ func timediv(v int64, div int32, rem *int32) int32 {
 //go:nosplit
 func acquirem() *m {
 	gp := getg()
-	gp.m.locks++
+	gp.m.locks++ //locks表示有多少个引用.
 	return gp.m
 }
 

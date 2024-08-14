@@ -31,7 +31,7 @@ const (
 	passive_spin    = 1
 )
 
-func mutexContended(l *mutex) bool {
+func mutexContended(l *mutex) bool { //锁是否被竞争, 也就是是否很多进程同时申请锁
 	return atomic.Loaduintptr(&l.key) > locked
 }
 
@@ -39,15 +39,15 @@ func lock(l *mutex) {
 	lockWithRank(l, getLockRank(l))
 }
 
-func lock2(l *mutex) {
-	gp := getg()
+func lock2(l *mutex) { //循环来一直检测锁状态, 直到获得锁.
+	gp := getg() //当前g的指针.
 	if gp.m.locks < 0 {
 		throw("runtime·lock: lock count")
 	}
-	gp.m.locks++
+	gp.m.locks++ // 用来锁这个的进程数加1
 
 	// Speculative grab for lock.
-	if atomic.Casuintptr(&l.key, 0, locked) {
+	if atomic.Casuintptr(&l.key, 0, locked) { //如果没有被锁上, 那么就设置为锁上.锁上就直接return即可. 如果cas操作失败,表示无法锁上那么走之后的逻辑.
 		return
 	}
 	semacreate(gp.m)
@@ -63,7 +63,7 @@ func lock2(l *mutex) {
 Loop:
 	for i := 0; ; i++ {
 		v := atomic.Loaduintptr(&l.key)
-		if v&locked == 0 {
+		if v&locked == 0 { //尝试进行锁
 			// Unlocked. Try to lock.
 			if atomic.Casuintptr(&l.key, v, v|locked) {
 				timer.end()
@@ -74,7 +74,8 @@ Loop:
 		if i < spin {
 			procyield(active_spin_cnt)
 		} else if i < spin+passive_spin {
-			osyield()
+			osyield() //SwitchToThread();
+			// 当调用这个函数的时候，系统要查看是否存在一个迫切需要CPU时间的线程。如果没有线程迫切需要CPU时间，SwitchToThread就会立即返回。如果存在一个迫切需要CPU时间的线程，SwitchToThread就对该线程进行调度
 		} else {
 			// Someone else has it.
 			// l->waitm points to a linked list of M's waiting
@@ -115,37 +116,37 @@ func unlock2(l *mutex) {
 			if atomic.Casuintptr(&l.key, locked, 0) {
 				break
 			}
-		} else {
+		} else { //如果当前没有锁住,说明这个锁已经被别人占用了.
 			// Other M's are waiting for the lock.
 			// Dequeue an M.
 			mp = muintptr(v &^ locked).ptr()
-			if atomic.Casuintptr(&l.key, v, uintptr(mp.nextwaitm)) {
+			if atomic.Casuintptr(&l.key, v, uintptr(mp.nextwaitm)) { //key还是没锁上,那么记作等待.
 				// Dequeued an M.  Wake it.
-				semawakeup(mp)
+				semawakeup(mp) //让这个信号等待.不用继续循环了.
 				break
 			}
 		}
 	}
 	gp.m.mLockProfile.recordUnlock(l)
-	gp.m.locks--
+	gp.m.locks-- //引用计数减一.
 	if gp.m.locks < 0 {
 		throw("runtime·unlock: lock count")
 	}
 	if gp.m.locks == 0 && gp.preempt { // restore the preemption request in case we've cleared it in newstack
-		gp.stackguard0 = stackPreempt
+		gp.stackguard0 = stackPreempt //把栈设置为抢占.
 	}
 }
 
 // One-time notifications.
-func noteclear(n *note) {
+func noteclear(n *note) { //清除note的数据
 	n.key = 0
 }
 
-func notewakeup(n *note) {
+func notewakeup(n *note) { //note信号唤醒
 	var v uintptr
 	for {
 		v = atomic.Loaduintptr(&n.key)
-		if atomic.Casuintptr(&n.key, v, locked) {
+		if atomic.Casuintptr(&n.key, v, locked) { //一直循环到可以锁住key,保证并发安全.
 			break
 		}
 	}

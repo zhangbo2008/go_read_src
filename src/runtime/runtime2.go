@@ -14,7 +14,7 @@ import (
 )
 
 // defined constants
-const (
+const ( // 这些变量用来描述G 携程的状态
 	// G status
 	//
 	// Beyond indicating the general state of a G, the G status
@@ -34,7 +34,7 @@ const (
 
 	// _Gidle means this goroutine was just allocated and has not
 	// yet been initialized.
-	_Gidle = iota // 0
+	_Gidle = iota // 0         //表示携程还没初始化
 
 	// _Grunnable means this goroutine is on a run queue. It is
 	// not currently executing user code. The stack is not owned.
@@ -62,7 +62,7 @@ const (
 
 	// _Gmoribund_unused is currently unused, but hardcoded in gdb
 	// scripts.
-	_Gmoribund_unused // 5
+	_Gmoribund_unused // 5      目前这个字段无用
 
 	// _Gdead means this goroutine is currently unused. It may be
 	// just exited, on a free list, or just being initialized. It
@@ -85,7 +85,7 @@ const (
 	// yet responsible for ready()ing it. Some suspendG must CAS
 	// the status to _Gwaiting to take responsibility for
 	// ready()ing this G.
-	_Gpreempted // 9
+	_Gpreempted // 9  //被抢断
 
 	// _Gscan combined with one of the above states other than
 	// _Grunning indicates that GC is scanning the stack. The
@@ -97,7 +97,7 @@ const (
 	// stack. This is otherwise like _Grunning.
 	//
 	// atomicstatus&~Gscan gives the state the goroutine will
-	// return to when the scan completes.
+	// return to when the scan completes. //加上GScan表示GC正则扫描stack
 	_Gscan          = 0x1000
 	_Gscanrunnable  = _Gscan + _Grunnable  // 0x1001
 	_Gscanrunning   = _Gscan + _Grunning   // 0x1002
@@ -106,7 +106,7 @@ const (
 	_Gscanpreempted = _Gscan + _Gpreempted // 0x1009
 )
 
-const (
+const ( //描述P 处理器的状态
 	// P status
 
 	// _Pidle means a P is not being used to run user code or the
@@ -116,7 +116,7 @@ const (
 	//
 	// The P is owned by the idle list or by whatever is
 	// transitioning its state. Its run queue is empty.
-	_Pidle = iota
+	_Pidle = iota //表示闲置cpu
 
 	// _Prunning means a P is owned by an M and is being used to
 	// run user code or the scheduler. Only the M that owns this P
@@ -125,7 +125,7 @@ const (
 	// do), _Psyscall (when entering a syscall), or _Pgcstop (to
 	// halt for the GC). The M may also hand ownership of the P
 	// off directly to another M (e.g., to schedule a locked G).
-	_Prunning
+	_Prunning //p拥有一个M, M是线程. M拥有这个P,M是用来运行用户代码, 也就是当前是用户态运行.
 
 	// _Psyscall means a P is not running user code. It has
 	// affinity to an M in a syscall but is not owned by it and
@@ -137,7 +137,7 @@ const (
 	// an M successfully CASes its original P back to _Prunning
 	// after a syscall, it must understand the P may have been
 	// used by another M in the interim.
-	_Psyscall
+	_Psyscall //表示系统态运行.
 
 	// _Pgcstop means a P is halted for STW and owned by the M
 	// that stopped the world. The M that stopped the world
@@ -147,13 +147,13 @@ const (
 	//
 	// The P retains its run queue and startTheWorld will restart
 	// the scheduler on Ps with non-empty run queues.
-	_Pgcstop
+	_Pgcstop //stw:STW即Stop-The-World的缩写，指的是系统在执行特定操作时需暂停（停止）所有应用程序线程。 P在闲置. P在挂机.
 
 	// _Pdead means a P is no longer used (GOMAXPROCS shrank). We
 	// reuse Ps if GOMAXPROCS increases. A dead P is mostly
 	// stripped of its resources, though a few things remain
 	// (e.g., trace buffers).
-	_Pdead
+	_Pdead // 处理器不再使用了.
 )
 
 // Mutual exclusion locks.  In the uncontended case,
@@ -163,14 +163,14 @@ const (
 // Initialization is helpful for static lock ranking, but not required.
 type mutex struct {
 	// Empty struct if lock ranking is disabled, otherwise includes the lock rank
-	lockRankStruct
+	lockRankStruct //记录lock的rank, 也就是多少个用到这个锁
 	// Futex-based impl treats it as uint32 key,
 	// while sema-based impl as M* waitm.
 	// Used to be a union, but unions break precise GC.
-	key uintptr
+	key uintptr //表示是否锁住了.
 }
 
-// sleep and wakeup on one-time events.
+// sleep and wakeup on one-time events. 这个note类用来做一次性事件的sleep和叫醒.
 // before any calls to notesleep or notewakeup,
 // must call noteclear to initialize the Note.
 // then, exactly one thread can call notesleep
@@ -190,29 +190,31 @@ type mutex struct {
 //
 // notesleep/notetsleep are generally called on g0,
 // notetsleepg is similar to notetsleep but is called on user g.
-type note struct {
+type note struct { //本质也是一个地址.记作key
 	// Futex-based impl treats it as uint32 key,
 	// while sema-based impl as M* waitm.
 	// Used to be a union, but unions break precise GC.
 	key uintptr
 }
 
-type funcval struct {
+type funcval struct { //函数类型, 也是本质是一个地址.
 	fn uintptr
 	// variable-size, fn-specific data here
 }
 
-type iface struct {
-	tab  *itab
+type iface struct { //接口类型
+	tab  *itab //这个itab比下面的_type要包含多个方法函数在里面.
 	data unsafe.Pointer
 }
 
-type eface struct {
+type eface struct { //也是接口类型: 他俩的区别:https://blog.frognew.com/2018/11/go-interface-iface-eface.html //
+	// iface - 表示拥有方法的接口类型变量
+	// eface - 表示m没有方法的空接口(empty interfac)类型变量，即interface{}类型的变量
 	_type *_type
 	data  unsafe.Pointer
 }
 
-func efaceOf(ep *any) *eface {
+func efaceOf(ep *any) *eface { //把一个any类型的指针转化为eface对象.
 	return (*eface)(unsafe.Pointer(ep))
 }
 
@@ -260,21 +262,21 @@ func efaceOf(ep *any) *eface {
 // alternate arena. Using guintptr doesn't make that problem any worse.
 // Note that pollDesc.rg, pollDesc.wg also store g in uintptr form,
 // so they would need to be updated too if g's start moving.
-type guintptr uintptr
+type guintptr uintptr //一个指向g结构体的指针.所以下面起名叫gp. 指向一个g的指针.
 
 //go:nosplit
 func (gp guintptr) ptr() *g { return (*g)(unsafe.Pointer(gp)) }
 
 //go:nosplit
-func (gp *guintptr) set(g *g) { *gp = guintptr(unsafe.Pointer(g)) }
+func (gp *guintptr) set(g *g) { *gp = guintptr(unsafe.Pointer(g)) } //让gp指向g, 注意puintptr是g的指针, 这里gp是 g的指针的指针.
 
 //go:nosplit
-func (gp *guintptr) cas(old, new guintptr) bool {
+func (gp *guintptr) cas(old, new guintptr) bool { //cas操作,是元的
 	return atomic.Casuintptr((*uintptr)(unsafe.Pointer(gp)), uintptr(old), uintptr(new))
 }
 
 //go:nosplit
-func (gp *g) guintptr() guintptr {
+func (gp *g) guintptr() guintptr { //g指针转化为guinitptr类型.
 	return guintptr(unsafe.Pointer(gp))
 }
 
@@ -287,13 +289,13 @@ func setGNoWB(gp **g, new *g) {
 	(*guintptr)(unsafe.Pointer(gp)).set(new)
 }
 
-type puintptr uintptr
+type puintptr uintptr //指向一个p对象.
 
 //go:nosplit
 func (pp puintptr) ptr() *p { return (*p)(unsafe.Pointer(pp)) }
 
 //go:nosplit
-func (pp *puintptr) set(p *p) { *pp = puintptr(unsafe.Pointer(p)) }
+func (pp *puintptr) set(p *p) { *pp = puintptr(unsafe.Pointer(p)) } //这里pp是p的二级指针
 
 // muintptr is a *m that is not tracked by the garbage collector.
 //
@@ -304,13 +306,13 @@ func (pp *puintptr) set(p *p) { *pp = puintptr(unsafe.Pointer(p)) }
 //
 //  2. Any muintptr in the heap must be owned by the M itself so it can
 //     ensure it is not in use when the last true *m is released.
-type muintptr uintptr
+type muintptr uintptr // muintptr是指向一个m的指针.
 
 //go:nosplit
-func (mp muintptr) ptr() *m { return (*m)(unsafe.Pointer(mp)) }
+func (mp muintptr) ptr() *m { return (*m)(unsafe.Pointer(mp)) } //返回指针本身. (强转位*m指针类型了.)
 
 //go:nosplit
-func (mp *muintptr) set(m *m) { *mp = muintptr(unsafe.Pointer(m)) }
+func (mp *muintptr) set(m *m) { *mp = muintptr(unsafe.Pointer(m)) } // mp指向m
 
 // setMNoWB performs *mp = new without a write barrier.
 // For times when it's impractical to use an muintptr.
@@ -323,7 +325,7 @@ func setMNoWB(mp **m, new *m) {
 
 type gobuf struct {
 	// The offsets of sp, pc, and g are known to (hard-coded in) libmach.
-	//
+	//   sp, pc, g
 	// ctxt is unusual with respect to GC: it may be a
 	// heap-allocated funcval, so GC needs to track it, but it
 	// needs to be set and cleared from assembly, where it's
@@ -334,10 +336,14 @@ type gobuf struct {
 	// and restores it doesn't need write barriers. It's still
 	// typed as a pointer so that any other writes from Go get
 	// write barriers.
-	sp   uintptr
+
+	// write barriers 是一种内核机制，用来确保文件系统metadata被正确并有序的写入持久化存储介质，不管底层存储是否有易失CACHE，不管电源是否突然关闭，都可以被确保。
+	// 一个开启了write barriers的文件系统，使用 fsync()方法写入的数据将被确保 被正确并有序的写入持久化存储介质。不管底层存储是否有易失CACHE，不管电源是否突然关闭，都可以被确保。
+	// 当然开启write barriers将导致性能下降，特别在频繁的fsync()调用，或频繁的创建或删除大量小文件时。
+	sp   uintptr //sp, pc, g 都是值得偏移量跟libmach.
 	pc   uintptr
 	g    guintptr
-	ctxt unsafe.Pointer
+	ctxt unsafe.Pointer //保存寄存器
 	ret  uintptr
 	lr   uintptr
 	bp   uintptr // for framepointer-enabled architectures
@@ -353,7 +359,7 @@ type gobuf struct {
 //
 // sudogs are allocated from a special pool. Use acquireSudog and
 // releaseSudog to allocate and free them.
-type sudog struct {
+type sudog struct { // sudog 表示g的等待队列. 用来实现channel的接收发送.
 	// The following fields are protected by the hchan.lock of the
 	// channel this sudog is blocking on. shrinkstack depends on
 	// this for sudogs involved in channel ops.
@@ -375,20 +381,20 @@ type sudog struct {
 
 	// isSelect indicates g is participating in a select, so
 	// g.selectDone must be CAS'd to win the wake-up race.
-	isSelect bool
+	isSelect bool //是否g参与了select语句.
 
 	// success indicates whether communication over channel c
 	// succeeded. It is true if the goroutine was awoken because a
 	// value was delivered over channel c, and false if awoken
 	// because c was closed.
-	success bool
+	success bool //跟channel交互是否成功.
 
 	// waiters is a count of semaRoot waiting list other than head of list,
 	// clamped to a uint16 to fit in unused space.
 	// Only meaningful at the head of the list.
 	// (If we wanted to be overly clever, we could store a high 16 bits
 	// in the second entry in the list.)
-	waiters uint16
+	waiters uint16 //有多少个信号在等这个
 
 	parent   *sudog // semaRoot binary tree
 	waitlink *sudog // g.waiting list or semaRoot
@@ -396,7 +402,7 @@ type sudog struct {
 	c        *hchan // channel
 }
 
-type libcall struct {
+type libcall struct { //函数调用
 	fn   uintptr
 	n    uintptr // number of parameters
 	args uintptr // parameters
@@ -428,8 +434,8 @@ type g struct {
 	// It is stack.lo+StackGuard on g0 and gsignal stacks.
 	// It is ~0 on other goroutine stacks, to trigger a call to morestackc (and crash).
 	stack       stack   // offset known to runtime/cgo
-	stackguard0 uintptr // offset known to liblink
-	stackguard1 uintptr // offset known to liblink
+	stackguard0 uintptr // offset known to liblink  // 检查栈空间是否足够的值, 低于这个值会扩张栈, 0是go代码使用的 //记录的是一个偏移量offset //go调用的栈地址最小值
+	stackguard1 uintptr // offset known to liblink  // 检查栈空间是否足够的值, 低于这个值会扩张栈, 1是原生代码使用的 // c语言调用的栈地址最小值.
 
 	_panic    *_panic // innermost panic - offset known to liblink
 	_defer    *_defer // innermost defer
@@ -459,7 +465,7 @@ type g struct {
 	waitsince    int64      // approx time when the g become blocked
 	waitreason   waitReason // if status==Gwaiting
 
-	preempt       bool // preemption signal, duplicates stackguard0 = stackpreempt
+	preempt       bool // preemption signal, duplicates stackguard0 = stackpreempt //go的抢占标记位.
 	preemptStop   bool // transition to _Gpreempted on preemption; otherwise, just deschedule
 	preemptShrink bool // shrink stack at synchronous safe point
 
@@ -533,6 +539,8 @@ type g struct {
 // latency tracking runs.
 const gTrackingPeriod = 8
 
+// 写到这里，TLS的定义就不言而喻。TLS全称为Thread Local Storage，即线程本地存储。在单线程模式下，所有整个程序生命周期的变量都是只有一份，那是因为只是一个执行单元；而在多线程模式下，有些变量需要支持每个线程独享一份的功能。这种每线程独享的变量放到每个线程专有的存储区域，所以称为线程本地存储（Thread Local Storage）或者线程私有数据（Thread Specific Data）。
+
 const (
 	// tlsSlots is the number of pointer-sized slots reserved for TLS on some platforms,
 	// like Windows.
@@ -544,7 +552,7 @@ const (
 const (
 	freeMStack = 0 // M done, free stack and reference.
 	freeMRef   = 1 // M done, free reference.
-	freeMWait  = 2 // M still in use.
+	freeMWait  = 2 // M still in use.    freeMwait表示等待free,也就是还在用,不要析构现在.
 )
 
 type m struct {
@@ -580,7 +588,7 @@ type m struct {
 	isextra       bool          // m is an extra m
 	isExtraInC    bool          // m is an extra m that is not executing Go code
 	isExtraInSig  bool          // m is an extra m in a signal handler
-	freeWait      atomic.Uint32 // Whether it is safe to free g0 and delete m (one of freeMRef, freeMStack, freeMWait)
+	freeWait      atomic.Uint32 // Whether it is safe to free g0 and delete m (one of freeMRef, freeMStack, freeMWait) //是否安全来析构g0和m
 	needextram    bool
 	traceback     uint8
 	ncgocall      uint64        // number of cgo calls in total
@@ -596,7 +604,7 @@ type m struct {
 	lockedInt     uint32      // tracking for internal lockOSThread
 	nextwaitm     muintptr    // next m waiting for lock
 
-	mLockProfile mLockProfile // fields relating to runtime.lock contention
+	mLockProfile mLockProfile // fields relating to runtime.lock contention //记录锁使用的情况.
 
 	// wait* are used to carry arguments from gopark into park_m, because
 	// there's no stack to put them on. That is their sole purpose.

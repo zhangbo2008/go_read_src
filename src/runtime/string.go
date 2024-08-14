@@ -78,7 +78,7 @@ func concatstring5(buf *tmpBuf, a0, a1, a2, a3, a4 string) string {
 // n is the length of the slice.
 // Buf is a fixed-size buffer for the result,
 // it is not nil if the result does not escape.
-func slicebytetostring(buf *tmpBuf, ptr *byte, n int) string {
+func slicebytetostring(buf *tmpBuf, ptr *byte, n int) string { // ptr转成字符串
 	if n == 0 {
 		// Turns out to be a relatively common case.
 		// Consider that you want to parse out data between parens in "foo()bar",
@@ -106,9 +106,9 @@ func slicebytetostring(buf *tmpBuf, ptr *byte, n int) string {
 	}
 
 	var p unsafe.Pointer
-	if buf != nil && n <= len(buf) {
+	if buf != nil && n <= len(buf) { //如果小于临时的buf, 那么用临时buf
 		p = unsafe.Pointer(buf)
-	} else {
+	} else { //否则malloc一个地址用.
 		p = mallocgc(uintptr(n), nil, false)
 	}
 	memmove(p, unsafe.Pointer(ptr), uintptr(n))
@@ -117,13 +117,13 @@ func slicebytetostring(buf *tmpBuf, ptr *byte, n int) string {
 
 // stringDataOnStack reports whether the string's data is
 // stored on the current goroutine's stack.
-func stringDataOnStack(s string) bool {
+func stringDataOnStack(s string) bool { //判断s是否在当前g的stack上.
 	ptr := uintptr(unsafe.Pointer(unsafe.StringData(s)))
 	stk := getg().stack
 	return stk.lo <= ptr && ptr < stk.hi
 }
 
-func rawstringtmp(buf *tmpBuf, l int) (s string, b []byte) {
+func rawstringtmp(buf *tmpBuf, l int) (s string, b []byte) { // buf转stirng 和 []byte
 	if buf != nil && l <= len(buf) {
 		b = buf[:l]
 		s = slicebytetostringtmp(&b[0], len(b))
@@ -229,7 +229,7 @@ func slicerunetostring(buf *tmpBuf, a []rune) string {
 	return s[:size2]
 }
 
-type stringStruct struct {
+type stringStruct struct { // 这个是stirng在运行时的底层类型. 字符串底层是一个指针表示字符串的首地址, 加一个长度len字段即可.
 	str unsafe.Pointer
 	len int
 }
@@ -244,7 +244,7 @@ func stringStructOf(sp *string) *stringStruct {
 	return (*stringStruct)(unsafe.Pointer(sp))
 }
 
-func intstring(buf *[4]byte, v int64) (s string) {
+func intstring(buf *[4]byte, v int64) (s string) { // v这个整数, 看做ascii码,根据编码转成byte数组后转成s作为返回值.
 	var b []byte
 	if buf != nil {
 		b = buf[:]
@@ -263,13 +263,13 @@ func intstring(buf *[4]byte, v int64) (s string) {
 // string and byte slice both refer to the same storage.
 // The storage is not zeroed. Callers should use
 // b to set the string contents and then drop b.
-func rawstring(size int) (s string, b []byte) {
+func rawstring(size int) (s string, b []byte) { //开辟大小size的内存, 然后s和b都指向这个内存
 	p := mallocgc(uintptr(size), nil, false)
 	return unsafe.String((*byte)(p), size), unsafe.Slice((*byte)(p), size)
 }
 
 // rawbyteslice allocates a new byte slice. The byte slice is not zeroed.
-func rawbyteslice(size int) (b []byte) {
+func rawbyteslice(size int) (b []byte) { // 创建一个空的byte数组大小为size
 	cap := roundupsize(uintptr(size), true)
 	p := mallocgc(cap, nil, false)
 	if cap != uintptr(size) {
@@ -281,7 +281,7 @@ func rawbyteslice(size int) (b []byte) {
 }
 
 // rawruneslice allocates a new rune slice. The rune slice is not zeroed.
-func rawruneslice(size int) (b []rune) {
+func rawruneslice(size int) (b []rune) { // 创建一个rune数组, 长度为size大小.
 	if uintptr(size) > maxAlloc/4 {
 		throw("out of memory")
 	}
@@ -296,7 +296,7 @@ func rawruneslice(size int) (b []rune) {
 }
 
 // used by cmd/cgo
-func gobytes(p *byte, n int) (b []byte) {
+func gobytes(p *byte, n int) (b []byte) { // 创建byte数组,内容是p长度是n
 	if n == 0 {
 		return make([]byte, 0)
 	}
@@ -315,7 +315,7 @@ func gobytes(p *byte, n int) (b []byte) {
 // This is exported via linkname to assembly in syscall (for Plan9).
 //
 //go:linkname gostring
-func gostring(p *byte) string {
+func gostring(p *byte) string { // *byte转成string类型.
 	l := findnull(p)
 	if l == 0 {
 		return ""
@@ -332,7 +332,7 @@ func internal_syscall_gostring(p *byte) string {
 	return gostring(p)
 }
 
-func gostringn(p *byte, l int) string {
+func gostringn(p *byte, l int) string { // p转成stirng
 	if l == 0 {
 		return ""
 	}
@@ -357,7 +357,7 @@ const (
 // atoi64 parses an int64 from a string s.
 // The bool result reports whether s is a number
 // representable by a value of type int64.
-func atoi64(s string) (int64, bool) {
+func atoi64(s string) (int64, bool) { // atoi: ascii to integer 字符串到数字转化
 	if s == "" {
 		return 0, false
 	}
@@ -433,7 +433,7 @@ func atoi32(s string) (int32, bool) {
 //
 // Returns an int64 because that's what its callers want and receive,
 // but the result is always non-negative.
-func parseByteCount(s string) (int64, bool) {
+func parseByteCount(s string) (int64, bool) { // 解析bite数大小, KB,MB,GB,TB, 算他们bite数多少.返回这个数.
 	// The empty string is not valid.
 	if s == "" {
 		return 0, false
@@ -505,7 +505,7 @@ func parseByteCount(s string) (int64, bool) {
 }
 
 //go:nosplit
-func findnull(s *byte) int {
+func findnull(s *byte) int { //s字符串中找到空字符串.也就是null字符串, null字符串查ascii码表可以知道他的asciim吗是0.
 	if s == nil {
 		return 0
 	}
@@ -514,9 +514,9 @@ func findnull(s *byte) int {
 	// on x86 machines, and those are classified as floating point instructions,
 	// which are illegal in a note handler.
 	if GOOS == "plan9" {
-		p := (*[maxAlloc/2 - 1]byte)(unsafe.Pointer(s))
+		p := (*[maxAlloc/2 - 1]byte)(unsafe.Pointer(s)) //遍历一片地址.
 		l := 0
-		for p[l] != 0 {
+		for p[l] != 0 { //找到内容为null的地址.返回他的索引.
 			l++
 		}
 		return l
@@ -538,7 +538,7 @@ func findnull(s *byte) int {
 	for {
 		t := *(*string)(unsafe.Pointer(&stringStruct{ptr, safeLen}))
 		// Check one page at a time.
-		if i := bytealg.IndexByteString(t, 0); i != -1 {
+		if i := bytealg.IndexByteString(t, 0); i != -1 { //找到ascii码是0的, 如果存在,就返回这个索引.
 			return offset + i
 		}
 		// Move to next page
@@ -548,7 +548,7 @@ func findnull(s *byte) int {
 	}
 }
 
-func findnullw(s *uint16) int {
+func findnullw(s *uint16) int { // w表示word也就是双字节,也就是16位.
 	if s == nil {
 		return 0
 	}
@@ -561,13 +561,13 @@ func findnullw(s *uint16) int {
 }
 
 //go:nosplit
-func gostringnocopy(str *byte) string {
-	ss := stringStruct{str: unsafe.Pointer(str), len: findnull(str)}
+func gostringnocopy(str *byte) string { // *byte 类型转成string
+	ss := stringStruct{str: unsafe.Pointer(str), len: findnull(str)} //利用findnull计算长度
 	s := *(*string)(unsafe.Pointer(&ss))
 	return s
 }
 
-func gostringw(strw *uint16) string {
+func gostringw(strw *uint16) string { //识别2个rune作为字符串.
 	var buf [8]byte
 	str := (*[maxAlloc/2/2 - 1]uint16)(unsafe.Pointer(strw))
 	n1 := 0

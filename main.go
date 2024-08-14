@@ -31,6 +31,7 @@ func main() {
 	print(len(bbb))
 
 	// var buf [20]byte // big enough for 64bit value base 10 2的64次幂足够十进制20位来保存.
-	i := byte('0' + '2' + '1')
-	print(i)
+	// i := byte('0' + '2' + '1')
+	println((-3) & 7)
+	println(3)
 }

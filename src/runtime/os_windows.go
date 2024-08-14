@@ -158,7 +158,7 @@ func tstart_stdcall(newm *m)
 // Init-time helper
 func wintls()
 
-type mOS struct {
+type mOS struct { //m的父类
 	threadLock mutex   // protects "thread" and prevents closing
 	thread     uintptr // thread handle
 
@@ -188,7 +188,7 @@ type mOS struct {
 	// TODO(austin): We may not need this if preemption were more
 	// tightly synchronized on the G/P status and preemption
 	// blocked transition into _Gsyscall/_Psyscall.
-	preemptExtLock uint32
+	preemptExtLock uint32 //0是没有被抢占. 1是被抢占
 }
 
 // Stubs so tests can link correctly. These should never be called.
@@ -761,7 +761,7 @@ func semacreate(mp *m) {
 	if mp.waitsema != 0 {
 		return
 	}
-	mp.waitsema = stdcall4(_CreateEventA, 0, 0, 0, 0)
+	mp.waitsema = stdcall4(_CreateEventA, 0, 0, 0, 0) //创建一个等待的信号. https://learn.microsoft.com/zh-cn/windows/win32/api/synchapi/nf-synchapi-createeventa
 	if mp.waitsema == 0 {
 		systemstack(func() {
 			print("runtime: createevent failed; errno=", getlasterror(), "\n")

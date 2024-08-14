@@ -101,7 +101,7 @@ func decoderune(s string, k int) (r rune, pos int) {
 
 // encoderune writes into p (which must be large enough) the UTF-8 encoding of the rune.
 // It returns the number of bytes written.
-func encoderune(p []byte, r rune) int {
+func encoderune(p []byte, r rune) int { // r数据转byte写入p
 	// Negative values are erroneous. Making it unsigned addresses the problem.
 	switch i := uint32(r); {
 	case i <= rune1Max:

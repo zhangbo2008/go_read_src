@@ -26,11 +26,11 @@ import (
 
 const (
 	maxAlign  = 8
-	hchanSize = unsafe.Sizeof(hchan{}) + uintptr(-int(unsafe.Sizeof(hchan{}))&(maxAlign-1))
+	hchanSize = unsafe.Sizeof(hchan{}) + uintptr(-int(unsafe.Sizeof(hchan{}))&(maxAlign-1)) //unsafe.Sizeof(hchan{}) 是占用字节数, 一个数字加上他的负数等于0,利用这个技巧我们只保留后3位,那么求和之后后三位全是0. 所以结果一定是8的倍数.
 	debugChan = false
 )
 
-type hchan struct {
+type hchan struct { //channel的实现
 	qcount   uint           // total data in the queue
 	dataqsiz uint           // size of the circular queue
 	buf      unsafe.Pointer // points to an array of dataqsiz elements

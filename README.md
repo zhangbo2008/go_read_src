@@ -1522,7 +1522,93 @@ TEXT	·IndexByte(SB), NOSPLIT, $0-40
 		所以我们在memhash中访问bx,cx就直接访问了seed和size. 而AX是数据指针也是返回值的地址.
 
 
-
-
+		src\runtime\string.go
+			提供runtime字符串类型,和[]byte,rune等的互化.
 		src\runtime\runtime.go
 			定义了时间相关的类型.
+
+		src\runtime\runtime2.go
+			定义了GMP的类型,字段很多不好理解,等后续这些类型使用的时候,根据方法来解析各个字段的含义用法.	
+
+
+		src\runtime\lock_sema.go
+			锁的信号量实现.
+
+
+
+
+
+
+		src\runtime\lockrank.go
+			锁的级别
+			lockPartialOrder是一个二维数组.定义了各个锁之间的优先级关系.
+			比如: lockRankScavenge:        {lockRankSysmon},
+			表示lockRankScavenge 获得之前需要先获得lockRankSysmon锁.
+		src\runtime\lockrank_on.go
+
+			依赖这个函数:
+			// func systemstack(fn func())//这个函数的目的是在系统栈上运行一个给定的函数fn。函数的核心是调用fn之前保存g0到寄存器, 调用函数后把寄存器中的g0再放回g的位置.//g0是一个中转站用来保存g的状态.
+			TEXT runtime·systemstack(SB), NOSPLIT, $0-8
+				MOVQ	fn+0(FP), DI	// DI = fn  函数地址放到DI上.
+				get_tls(CX)     //调用get_tls宏来获取线程局部存储（TLS）的地址，并存储在寄存器CX中。
+				MOVQ	g(CX), AX	// AX = g
+				MOVQ	g_m(AX), BX	// BX = m
+				//下面是3个特例提前退出函数.
+				CMPQ	AX, m_gsignal(BX)
+				JEQ	noswitch
+
+				MOVQ	m_g0(BX), DX	// DX = g0
+				CMPQ	AX, DX
+				JEQ	noswitch
+
+				CMPQ	AX, m_curg(BX)
+				JNE	bad
+
+				// Switch stacks.
+				// The original frame pointer is stored in BP,
+				// which is useful for stack unwinding.
+				// Save our state in g->sched. Pretend to
+				// be systemstack_switch if the G stack is scanned.
+				CALL	gosave_systemstack_switch<>(SB)
+
+				// switch to 
+				MOVQ	DX, g(CX)      // g0放到g上.
+				MOVQ	DX, R14 // set the g register  , g0放R14上
+				MOVQ	(g_sched+gobuf_sp)(DX), SP  // g0放sp上
+
+				// call target function
+				MOVQ	DI, DX
+				MOVQ	0(DI), DI
+				CALL	DI
+
+				// switch back to g // 把上面的g0再切回来.
+				get_tls(CX)
+				MOVQ	g(CX), AX
+				MOVQ	g_m(AX), BX
+				MOVQ	m_curg(BX), AX
+				MOVQ	AX, g(CX)
+				MOVQ	(g_sched+gobuf_sp)(AX), SP
+				MOVQ	(g_sched+gobuf_bp)(AX), BP
+				MOVQ	$0, (g_sched+gobuf_sp)(AX)
+				MOVQ	$0, (g_sched+gobuf_bp)(AX)
+				RET
+
+
+
+
+
+
+
+
+
+		src\runtime\go_tls.h
+			go_tls这个宏的实现:
+			#define	get_tls(r)	MOVQ TLS, r
+			//MOVQ TLS, r: 这是宏展开后的汇编指令。MOVQ是用于在x86-64架构下移动64位数据的指令。TLS通常是一个特殊的段寄存器，它指向当前线程的线程局部存储区域。这个宏的作用是将TLS段寄存器的内容移动到寄存器r中。
+			#define	g(r)	0(r)(TLS*1) 获得g指针.
+
+		src\runtime\rwmutex.go
+			runtime中使用的读写锁.
+
+
+
